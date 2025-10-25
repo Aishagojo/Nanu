@@ -1,4 +1,4 @@
-﻿# EduAssist Platform
+# EduAssist Platform
 
 EduAssist is a voice-first learning companion designed with Kenya Methodist University and partner schools in mind. The platform blends a modular Django REST API with an Expo (React Native) mobile app so that neurodiverse students, their families, and campus staff can share the same data, receive timely nudges, and stay rewarded for progress.
 
@@ -30,7 +30,7 @@ EduAssist is a voice-first learning companion designed with Kenya Methodist Univ
 ### Learning & Academic Support
 - **Course / Unit / Enrollment / Grade models** capture curricula. The `Enrollment` model caps active courses at four per student and enforces that only HoDs or staff can create or edit assignments.
 - **Progress summaries** (`GET /api/learning/students/<id>/progress/`) aggregate grades, averages, completed units, and course metadata for dashboards and guardians.
-- **Student dashboards & flows** surface timetable cards, assignment reminders, and quick-access buttons to the library, help center, and Rewards Hub. The timetable screen uses large contrasty cards and keeps a â€œSpeak timetableâ€ control ready for screen-free guidance.
+- **Student dashboards & flows** surface timetable cards, assignment reminders, and quick-access buttons to the library, help center, and Rewards Hub. The timetable screen uses large contrasty cards and keeps a "Speak timetable control ready for screen-free guidance.
 
 ### Communication & Support Desk
 - **Thread + Message triads** tie a student, lecturer, and optional parent into a single conversation. Role-based queryset filters prevent eavesdropping, and audio attachments are stored in `MEDIA_ROOT` with automatic transcript capture.
@@ -38,10 +38,10 @@ EduAssist is a voice-first learning companion designed with Kenya Methodist Univ
 - **Support chat API** stores anonymized helper sessions, redacts PII (email/phone), and replies with guided scripts for login, reset, and onboarding issues. The in-app `ChatWidget` hits the same endpoint, understands role keywords, and can deep-link to the right role experience.
 
 ### Finance, Records & Admin Ops
-- **FeeItem + Payment models** track due amounts, partial payments, and derived statuses (`Complete`, `In progress`, `Action needed`). Every payment recomputes the parent itemâ€TMs paid total.
+- **FeeItem + Payment models** track due amounts, partial payments, and derived statuses (`Complete`, `In progress`, `Action needed`). Every payment recomputes the parent itemTMs paid total.
 - **Finance summary endpoint** (`GET /api/finance/students/<id>/summary/`) aggregates balances, showcases overdue counts, and exposes item-level breakdowns for students, parents, and finance staff.
 - **Role-restricted CRUD**: finance users can create invoices and payments; admins may assist; students/parents are read-only. Heads of department manage enrollments, while admins manage users and links.
-- **Notifications groundwork** exists both in the backend (`notifications.Notification`) and the appâ€TMs `NotificationContext`, which polls threads/resources every 60 seconds, stores unread items per user in AsyncStorage, and powers the modal `NotificationBell`.
+- **Notifications groundwork** exists both in the backend (`notifications.Notification`) and the appTMs `NotificationContext`, which polls threads/resources every 60 seconds, stores unread items per user in AsyncStorage, and powers the modal `NotificationBell`.
 
 ### Library & Inclusive Media
 - **Repository resources** accept multiple media kinds (video, audio, PDF, doc, link). Serializers validate file types so only lecturers/staff can upload, and the student library screen emphasizes friendly thumbnails and fallback links.
@@ -54,7 +54,7 @@ EduAssist is a voice-first learning companion designed with Kenya Methodist Univ
 
 ### Notifications & Guided Actions
 - **Notification bell** displays unread counts, routes users to exact screens, and lets them mark everything read. It relies on `NotificationContext` tracking thread IDs and resource IDs so duplicate banners are avoided.
-- **Alert banners & floating assistant** give contextual nudges (e.g., â€œMath class starts in 15 minutesâ€) and provide instant chat access anywhere in the app.
+- **Alert banners & floating assistant** give contextual nudges (e.g., "Math class starts in 15 minutes) and provide instant chat access anywhere in the app.
 
 ### Accessibility by Design
 - Voice buttons appear on every critical flow (login, timetable, library, messaging, rewards) to either trigger speech or indicate microphone input.
@@ -77,14 +77,14 @@ EduAssist is a voice-first learning companion designed with Kenya Methodist Univ
 - Voice interactions lean on `expo-av` (record/playback) and `expo-speech` (spoken prompts). AsyncStorage stores local notification state and auth tokens. UI primitives (`VoiceButton`, `DashboardTile`, `FloatingAssistantButton`, `AlertBanner`, etc.) keep interactions consistent and accessible.
 
 ### API & Data Flow Highlights
-- `POST /api/token/` (+ `totp_code`) â*' issue JWT access & refresh pairs.
-- `GET /api/users/me/` â*' fetch profile, role, and accessibility preferences.
-- `POST /api/users/totp/*` â*' setup, activate, or disable MFA.
+- `POST /api/token/` (+ `totp_code`) *' issue JWT access & refresh pairs.
+- `GET /api/users/me/` *' fetch profile, role, and accessibility preferences.
+- `POST /api/users/totp/*` *' setup, activate, or disable MFA.
 - `GET|POST /api/learning/courses|units|enrollments/` + `GET /api/learning/students/<id>/progress/`.
 - `GET|POST /api/finance/items|payments/` + `GET /api/finance/students/<id>/summary/`.
 - `GET|POST /api/communications/threads|messages/` + `POST /api/communications/support/chat/`.
-- `POST /api/core/transcribe/` â*' convert uploaded audio to text.
-- `GET /api/repository/resources/` â*' drive the inclusive library screens.
+- `POST /api/core/transcribe/` *' convert uploaded audio to text.
+- `GET /api/repository/resources/` *' drive the inclusive library screens.
 
 ---
 
@@ -149,11 +149,11 @@ Each account comes with sensible `is_staff` / `is_superuser` settings so you can
 ---
 
 ## Rewards & Hedera Roadmap
-1. **Backend rewards service** â€" add a dedicated Django app for wallet linking, reward events, and Celery tasks that mint/transfer Hedera tokens.
-2. **HashPack connect flow** â€" implement QR/deeplink pairing, persist wallet metadata, and surface connection health inside the Rewards screen.
-3. **Automated earning rules** â€" emit reward events for attendance streaks, on-time assignments, login streaks, and lecturer commendations; notify stakeholders via the NotificationContext.
-4. **Claims + fulfillment** â€" let students request merch/fee credits, allow staff to approve or reject, and optionally burn or recycle Hedera tokens.
-5. **Chatbot integration** â€" route â€œHow many tokens do I have?â€ requests through Hedera Agent Kit so the helper can speak wallet balances and guide linking steps.
+1. **Backend rewards service** " add a dedicated Django app for wallet linking, reward events, and Celery tasks that mint/transfer Hedera tokens.
+2. **HashPack connect flow** " implement QR/deeplink pairing, persist wallet metadata, and surface connection health inside the Rewards screen.
+3. **Automated earning rules** " emit reward events for attendance streaks, on-time assignments, login streaks, and lecturer commendations; notify stakeholders via the NotificationContext.
+4. **Claims + fulfillment** " let students request merch/fee credits, allow staff to approve or reject, and optionally burn or recycle Hedera tokens.
+5. **Chatbot integration** " route "How many tokens do I have? requests through Hedera Agent Kit so the helper can speak wallet balances and guide linking steps.
 
 ---
 
@@ -163,7 +163,8 @@ Each account comes with sensible `is_staff` / `is_superuser` settings so you can
 - Extend notifications to use the backend `notifications` app (and eventually push) instead of local polling only.
 - Add advanced accessibility settings (dynamic font scaling, offline voice packs) and collect anonymous telemetry to keep improving neurodiverse experiences.
 
-EduAssist is steadily evolving into a unified, voice-forward experience that rewards positive behavior, keeps families in the loop, and gives staff clear controlsâ€"without compromising on clarity or accessibility.
+EduAssist is steadily evolving into a unified, voice-forward experience that rewards positive behavior, keeps families in the loop, and gives staff clear controls"without compromising on clarity or accessibility.
+
 
 
 
