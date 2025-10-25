@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.expo.json",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@screens/*": ["screens/*"],
+      "@navigation/*": ["navigation/*"],
+      "@theme/*": ["theme/*"],
+      "@hooks/*": ["hooks/*"],
+      "@services/*": ["services/*"],
+      "@data/*": ["data/*"],
+      "@app-types/*": ["types/*"],
+      "@context/*": ["context/*"]
+    }
+  },
+  "include": ["src"]
+}

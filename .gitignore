@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.log
+.env
+.venv/
+venv/
+ENV/
+async_cache/
+
+# Django
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+
+# Node/Expo
+node_modules/
+npm-debug.log*
+.yarn*
+.expo/
+.expo-shared/
+.expo-dev/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

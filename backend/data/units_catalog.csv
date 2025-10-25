@@ -1,0 +1,17 @@
+unit_code,unit_title,exam_tracks,notes
+TTM101,Fundamentals of Tourism,"KNEC, CDACC",Tourism systems; roles; ethics; industry sectors
+TTM102,Touristic Geography I,"KNEC, CDACC, ICM",IATA areas; climate; destination knowledge
+TTM103,Customer Care & Communication,"KNEC, CDACC",Service standards; complaint handling
+TTM104,Reservations & Ticketing I (GDS Basics),"KNEC, CDACC, IATA","PNR, availability, SSRs; intro pricing concepts"
+TTM105,Tour Operations & Itinerary Design,"KNEC, CDACC, ICM",Itinerary logic; costings; supplier liaison
+TTM106,Travel Formalities & Regulations (TIMATIC overview),"KNEC, CDACC, IATA",Passports; visas; health; insurance; conventions
+TTM107,ICT for Travel Operations,"KNEC, CDACC",Productivity tools; data entry; LMS
+TTM108,Foreign Language I (French/German),KNEC,A1 dialogues in travel contexts
+TTM199,Industrial Attachment / Practicum,"KNEC, CDACC",Supervised placement; portfolio/logbook
+CBT201,Competency: Agency Operations,CDACC,SOPs; workflows; cashiering basics; vouchers
+CBT202,Competency: Client Handling & Sales,CDACC,Needs assessment; upsell; service recovery
+CBT203,Competency: GDS Concepts,CDACC,Availability; PNRs; TIMATIC basics
+CBT299,Capstone Workplace Project,CDACC,Solve a real agency problem; external verification
+IATA-F01,"Industry, Codes & Geography",IATA,City/airport codes; IATA areas; routings
+IATA-F02,"Fares, Tickets & Quotations",IATA,Mileage; surcharges; taxes; fare rules (intro)
+IATA-F03,Travel Formalities & Customer Service,IATA,Passports; visas; health; disruptions
