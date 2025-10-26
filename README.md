@@ -1,6 +1,6 @@
-# EduAssist Platform
+# Nanu Platform
 
-Nanu is a voice-first learning companion designed with Kenya Methodist University and partner schools in mind. The platform blends a modular Django REST API with an Expo (React Native) mobile app so that neurodiverse students, their families, and campus staff can share the same data, receive timely nudges, and stay rewarded for progress.Leveraging Hedera's distributed ledger technology to transform key operational sectors.
+Nanu is the voice-first OS powering inclusive education. Built for high-needs students like those with Down syndrome, our platform uses AI and Hedera DLT to create a scalable, adaptive learning environment for the entire neurodiverse community
 
 ---
 
