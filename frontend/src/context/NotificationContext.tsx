@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -71,14 +72,6 @@ type NotificationContextValue = {
 
 const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
 
-const emptyState: StoredState = {
-  notifications: [],
-  lastSeenThreads: {},
-  seenResourceIds: [],
-  threadsInitialized: false,
-  resourcesInitialized: false,
-};
-
 const storageKeyForUser = (userId: number) => `eduassist.notifications.${userId}`;
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -93,6 +86,27 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [resourcesInitialized, setResourcesInitialized] = useState(false);
 
   const storageKey = user ? storageKeyForUser(user.id) : null;
+
+  const lastSeenThreadsRef = useRef(lastSeenThreads);
+  const threadsInitializedRef = useRef(threadsInitialized);
+  const seenResourceIdsRef = useRef(seenResourceIds);
+  const resourcesInitializedRef = useRef(resourcesInitialized);
+
+  useEffect(() => {
+    lastSeenThreadsRef.current = lastSeenThreads;
+  }, [lastSeenThreads]);
+
+  useEffect(() => {
+    threadsInitializedRef.current = threadsInitialized;
+  }, [threadsInitialized]);
+
+  useEffect(() => {
+    seenResourceIdsRef.current = seenResourceIds;
+  }, [seenResourceIds]);
+
+  useEffect(() => {
+    resourcesInitializedRef.current = resourcesInitialized;
+  }, [resourcesInitialized]);
 
   useEffect(() => {
     if (!user) {
@@ -159,7 +173,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const ingestThreads = useCallback(
     (threads: ApiThread[], route: AppRoute) => {
       if (!user) return;
-      if (!threadsInitialized && Object.keys(lastSeenThreads).length === 0) {
+      const seenSnapshot = lastSeenThreadsRef.current;
+      const hasInitialized = threadsInitializedRef.current;
+      if (!hasInitialized && Object.keys(seenSnapshot).length === 0) {
         const initialSeen: Record<number, string> = {};
         threads.forEach((thread) => {
           const lastMessage = thread.messages[thread.messages.length - 1];
@@ -167,6 +183,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             initialSeen[thread.id] = lastMessage.created_at;
           }
         });
+        lastSeenThreadsRef.current = initialSeen;
+        threadsInitializedRef.current = true;
         setLastSeenThreads(initialSeen);
         setThreadsInitialized(true);
         return;
@@ -180,7 +198,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (!lastMessage) return;
         const timestamp = lastMessage.created_at;
         updates[thread.id] = timestamp;
-        const lastSeen = lastSeenThreads[thread.id];
+        const lastSeen = seenSnapshot[thread.id];
         const authoredByViewer = lastMessage.author_detail.id === user.id;
         if (authoredByViewer) {
           return;
@@ -205,13 +223,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       if (Object.keys(updates).length) {
+        lastSeenThreadsRef.current = { ...seenSnapshot, ...updates };
         setLastSeenThreads((prev) => ({ ...prev, ...updates }));
       }
       if (newNotifications.length) {
         addNotifications(newNotifications);
       }
     },
-    [addNotifications, lastSeenThreads, threadsInitialized, user]
+    [addNotifications, user]
   );
 
   const markThreadRead = useCallback((thread: ApiThread) => {
@@ -239,19 +258,28 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const ingestResources = useCallback(
     (resources: ApiResource[], route: AppRoute) => {
       if (!user) return;
-      if (!resourcesInitialized && seenResourceIds.length === 0 && resources.length) {
-        setSeenResourceIds(resources.map((item) => item.id));
+      const knownIds = seenResourceIdsRef.current;
+      const resourcesReady = resourcesInitializedRef.current;
+      if (!resourcesReady && knownIds.length === 0 && resources.length) {
+        const initialIds = resources.map((item) => item.id);
+        seenResourceIdsRef.current = initialIds;
+        resourcesInitializedRef.current = true;
+        setSeenResourceIds(initialIds);
         setResourcesInitialized(true);
         return;
       }
 
-      const known = new Set(seenResourceIds);
+      const known = new Set(knownIds);
       const fresh = resources.filter((item) => !known.has(item.id));
       if (!fresh.length) {
         return;
       }
 
-      setSeenResourceIds((prev) => [...prev, ...fresh.map((item) => item.id)]);
+      setSeenResourceIds((prev) => {
+        const updated = [...prev, ...fresh.map((item) => item.id)];
+        seenResourceIdsRef.current = updated;
+        return updated;
+      });
       const timestamp = new Date().toISOString();
       const notificationsToAdd = fresh.map<AppNotification>((item) => ({
         id: `resource-${item.id}`,
@@ -265,7 +293,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }));
       addNotifications(notificationsToAdd);
     },
-    [addNotifications, resourcesInitialized, seenResourceIds, user]
+    [addNotifications, user]
   );
 
   useEffect(() => {

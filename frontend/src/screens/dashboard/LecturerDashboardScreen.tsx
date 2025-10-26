@@ -1,6 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
-import { GreetingHeader, DashboardTile, FloatingAssistantButton, BottomUtilityBar, AlertBanner, NotificationBell } from "@components/index";
+import {
+  GreetingHeader,
+  DashboardTile,
+  FloatingAssistantButton,
+  BottomUtilityBar,
+  AlertBanner,
+  NotificationBell,
+  VoiceSearchBar,
+  ChatWidget,
+} from "@components/index";
 import { palette, spacing } from "@theme/index";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -28,6 +37,7 @@ const lecturerTiles: LecturerTile[] = [
 export const LecturerDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
+  const [showAssistant, setShowAssistant] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -36,6 +46,10 @@ export const LecturerDashboardScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
       >
         <GreetingHeader name="Mr. Kamau" rightAccessory={<NotificationBell />} />
+        <VoiceSearchBar
+          onPress={() => navigation.navigate("Search")}
+          onVoicePress={() => navigation.navigate("Search")}
+        />
         <AlertBanner message="Start ICT201 session in 10 minutes" variant="info" />
         <View style={styles.tiles}>
           {lecturerTiles.map((tile) => (
@@ -49,8 +63,7 @@ export const LecturerDashboardScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-      <FloatingAssistantButton label="Assist" onPress={() => navigation.navigate("LecturerMessages")}
-      />
+      <FloatingAssistantButton label="Assist" onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
           { label: "Home", isActive: true },
@@ -59,6 +72,7 @@ export const LecturerDashboardScreen: React.FC = () => {
           { label: "Profile", onPress: () => navigation.navigate("Profile") },
         ]}
       />
+      {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import {
   GreetingHeader,
@@ -6,6 +6,8 @@ import {
   BottomUtilityBar,
   FloatingAssistantButton,
   AlertBanner,
+  VoiceSearchBar,
+  ChatWidget,
 } from "@components/index";
 import { palette, spacing } from "@theme/index";
 import { useNavigation } from "@react-navigation/native";
@@ -33,6 +35,7 @@ const adminTiles: AdminTile[] = [
 export const AdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
+  const [showAssistant, setShowAssistant] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -41,6 +44,10 @@ export const AdminDashboardScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
       >
         <GreetingHeader name="System Admin" />
+        <VoiceSearchBar
+          onPress={() => navigation.navigate("Search")}
+          onVoicePress={() => navigation.navigate("Search")}
+        />
         <AlertBanner message="High-contrast mode enabled system wide" variant="success" />
         <View style={styles.tiles}>
           {adminTiles.map((tile) => (
@@ -54,7 +61,7 @@ export const AdminDashboardScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-      <FloatingAssistantButton onPress={() => navigation.navigate("AdminUsers")} />
+      <FloatingAssistantButton onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
           { label: "Home", isActive: true },
@@ -62,6 +69,7 @@ export const AdminDashboardScreen: React.FC = () => {
           { label: "Profile", onPress: () => navigation.navigate("Profile") },
         ]}
       />
+      {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
     </View>
   );
 };

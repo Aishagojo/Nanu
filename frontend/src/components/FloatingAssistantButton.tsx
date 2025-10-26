@@ -8,26 +8,26 @@ interface FloatingAssistantButtonProps {
 }
 
 export const FloatingAssistantButton: React.FC<FloatingAssistantButtonProps> = ({
-  label = "Ask",
+  label = "Nanu",
   onPress,
 }) => (
   <TouchableOpacity
     style={styles.container}
     onPress={onPress}
     accessibilityRole="button"
-    accessibilityLabel="Open EduAssist helper"
+    accessibilityLabel="Open Nanu assistant"
   >
     <Text style={styles.text}>{label}</Text>
   </TouchableOpacity>
 );
 
-const size = 72;
+const size = 64;
 
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: spacing.xl,
-    right: spacing.xl,
+    bottom: spacing.xl + spacing.md,
+    right: spacing.md,
     width: size,
     height: size,
     borderRadius: radius.pill,

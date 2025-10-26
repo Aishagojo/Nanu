@@ -28,6 +28,58 @@ export type ApiUser = {
   totp_enabled?: boolean;
 };
 
+export type ApiParentLink = {
+  id: number;
+  parent: number;
+  student: number;
+  relationship: string | null;
+  parent_detail: ApiUser;
+  student_detail: ApiUser;
+};
+
+export type ApiCourse = {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  owner?: number | null;
+  owner_name?: string;
+};
+
+export type ApiProvisionRequest = {
+  id: number;
+  username: string;
+  display_name: string;
+  email: string;
+  role: Role;
+  status: string;
+  requested_by: number;
+  requested_by_detail: ApiUser;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_user: number | null;
+  created_user_detail: ApiUser | null;
+  temporary_password?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourseRoster = {
+  course: {
+    id: number;
+    code: string;
+    name: string;
+  };
+  students: Array<{
+    id: number;
+    username: string;
+    display_name: string | null;
+    active: boolean;
+    enrollment_id: number;
+  }>;
+};
+
 export type ApiResource = {
   id: number;
   title: string;
@@ -59,9 +111,20 @@ export const endpoints = {
   passwordResetConfirm: () => `${API_BASE}/api/users/password-reset/confirm/`,
   passwordChangeSelf: () => `${API_BASE}/api/users/password-reset/self/`,
   usersList: () => `${API_BASE}/api/users/users/`,
+  parentLinks: () => `${API_BASE}/api/users/parent-links/`,
+  provisionUser: () => `${API_BASE}/api/users/provision/`,
+  provisionRequests: () => `${API_BASE}/api/users/provision-requests/`,
+  provisionRequestApprove: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/approve/`,
+  provisionRequestReject: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/reject/`,
+  provisionRequestEmailAgain: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/email_again/`,
   threads: () => `${API_BASE}/api/communications/threads/`,
   messages: () => `${API_BASE}/api/communications/messages/`,
   progressSummary: (studentId: number) => `${API_BASE}/api/learning/students/${studentId}/progress/`,
+  courses: () => `${API_BASE}/api/learning/courses/`,
+  quickEnroll: () => `${API_BASE}/api/learning/enrollments/quick/`,
+  courseRoster: (courseId: number) => `${API_BASE}/api/learning/courses/${courseId}/roster/`,
+  attendanceCheckIn: () => `${API_BASE}/api/learning/attendance/check-in/`,
+  examRegister: () => `${API_BASE}/api/learning/exams/register/`,
   financeSummary: (studentId: number) => `${API_BASE}/api/finance/students/${studentId}/summary/`,
   timetable: (studentId: number) => `${API_BASE}/api/learning/students/${studentId}/timetable/`,
   totpSetup: () => `${API_BASE}/api/users/totp/setup/`,
@@ -205,6 +268,88 @@ export type ApiThread = {
 export const fetchThreads = (token: string) => fetchJson<ApiThread[]>(endpoints.threads(), token);
 
 export const fetchResources = (token: string) => fetchJson<ApiResource[]>(endpoints.resources(), token);
+
+export const fetchCourses = (token: string) => fetchJson<ApiCourse[]>(endpoints.courses(), token);
+
+export const fetchUsers = (token: string) => fetchJson<ApiUser[]>(endpoints.usersList(), token);
+
+export const fetchParentLinks = (token: string) => fetchJson<ApiParentLink[]>(endpoints.parentLinks(), token);
+
+export const fetchProvisionRequests = (token: string) =>
+  fetchJson<ApiProvisionRequest[]>(endpoints.provisionRequests(), token);
+
+export type CreateUserPayload = {
+  username: string;
+  password: string;
+  role: Role;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  display_name?: string;
+  prefers_simple_language?: boolean;
+  prefers_high_contrast?: boolean;
+  speech_rate?: number;
+};
+
+export const provisionUser = (token: string, payload: CreateUserPayload) =>
+  authedPost<ApiUser>(endpoints.provisionUser(), token, payload);
+
+export type ParentLinkPayload = {
+  parent: number;
+  student: number;
+  relationship?: string;
+  records_passcode: string;
+};
+
+export const createParentLink = (token: string, payload: ParentLinkPayload) =>
+  authedPost<ApiParentLink>(endpoints.parentLinks(), token, payload);
+
+export type ProvisionRequestPayload = {
+  username: string;
+  role: Extract<Role, "student" | "parent">;
+  display_name?: string;
+  email?: string;
+  records_passcode: string;
+};
+
+export const createProvisionRequest = (token: string, payload: ProvisionRequestPayload) =>
+  authedPost<ApiProvisionRequest>(endpoints.provisionRequests(), token, payload);
+
+export type QuickEnrollPayload = {
+  student_id?: number;
+  student_username?: string;
+  course_id?: number;
+  course_code?: string;
+};
+
+export const quickEnrollStudent = (token: string, payload: QuickEnrollPayload) =>
+  authedPost<{ detail: string }>(endpoints.quickEnroll(), token, payload);
+
+export const approveProvisionRequest = (token: string, requestId: number) =>
+  authedPost<{ user: ApiUser; temporary_password: string }>(endpoints.provisionRequestApprove(requestId), token);
+
+export const rejectProvisionRequest = (token: string, requestId: number, reason?: string) =>
+  authedPost<ApiProvisionRequest>(endpoints.provisionRequestReject(requestId), token, reason ? { reason } : {});
+
+export const emailProvisionCredentials = (token: string, requestId: number) =>
+  authedPost<{ detail: string }>(endpoints.provisionRequestEmailAgain(requestId), token);
+
+export const fetchCourseRoster = (token: string, courseId: number) =>
+  fetchJson<CourseRoster>(endpoints.courseRoster(courseId), token);
+
+export type AttendancePayload = {
+  enrollment_id?: number;
+  student_id?: number;
+  course_id?: number;
+  event_type?: "lecturer_mark" | "student_checkin";
+  note?: string;
+};
+
+export const submitAttendanceEvent = (token: string, payload: AttendancePayload) =>
+  authedPost(endpoints.attendanceCheckIn(), token, payload);
+
+export const registerForExams = (token: string) =>
+  authedPost<{ detail: string; allowed: boolean }>(endpoints.examRegister(), token);
 
 type CreateMessagePayload = {
   thread: number;

@@ -1,8 +1,16 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ScrollView, View, StyleSheet, Text, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { palette, spacing, typography } from "@theme/index";
 import { VoiceButton } from "@components/index";
+import { useAuth } from "@context/AuthContext";
+import {
+  fetchCourses,
+  fetchCourseRoster,
+  submitAttendanceEvent,
+  type ApiCourse,
+  type CourseRoster,
+} from "@services/api";
 
 const sessions = [
   { time: "08:00", course: "ICT201", topic: "Networks & Internet", students: 24, location: "B-302", action: "Start attendance" },
@@ -10,26 +18,165 @@ const sessions = [
   { time: "14:30", course: "Advisory", topic: "One-on-one check-ins", students: 6, location: "Counseling Room", action: "Open notes" },
 ];
 
-export const LecturerClassesScreen: React.FC = () => (
-  <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Today&apos;s Classes</Text>
-    <Text style={styles.subtitle}>Tap any session to take attendance, share resources, or start a call.</Text>
-    {sessions.map((session) => (
-      <View key={session.course + session.time} style={styles.card}>
-        <View style={styles.iconWrapper}>
-          <Ionicons name="people" size={28} color={palette.primary} />
-          <Text style={styles.studentCount}>{session.students}</Text>
+export const LecturerClassesScreen: React.FC = () => {
+  const { state } = useAuth();
+  const token = state.accessToken;
+  const lecturerId = state.user?.id;
+
+  const [courses, setCourses] = useState<ApiCourse[]>([]);
+  const [courseError, setCourseError] = useState<string | null>(null);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [rosters, setRosters] = useState<Record<number, CourseRoster | null>>({});
+  const [rosterLoadingId, setRosterLoadingId] = useState<number | null>(null);
+  const [attendanceMarked, setAttendanceMarked] = useState<Record<number, Record<number, boolean>>>({});
+  const [attendanceProcessingKey, setAttendanceProcessingKey] = useState<string | null>(null);
+
+  const loadCourses = useCallback(async () => {
+    if (!token || !lecturerId) return;
+    try {
+      setLoadingCourses(true);
+      setCourseError(null);
+      const data = await fetchCourses(token);
+      const owned = data.filter((course) => course.owner === lecturerId);
+      setCourses(owned);
+    } catch (error: any) {
+      console.warn("Failed to load courses", error);
+      setCourseError(error?.message ?? "Unable to load your classes.");
+    } finally {
+      setLoadingCourses(false);
+    }
+  }, [lecturerId, token]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  const handleLoadRoster = async (courseId: number) => {
+    if (!token) return;
+    try {
+      setRosterLoadingId(courseId);
+      const data = await fetchCourseRoster(token, courseId);
+      setRosters((prev) => ({ ...prev, [courseId]: data }));
+    } catch (error: any) {
+      console.warn("Failed to load roster", error);
+      Alert.alert("Roster unavailable", error?.message ?? "Unable to load roster right now.");
+    } finally {
+      setRosterLoadingId(null);
+    }
+  };
+
+  const markStudentAttendance = async (courseId: number, studentId: number, enrollmentId: number) => {
+    if (!token) return;
+    const key = `${courseId}:${studentId}`;
+    try {
+      setAttendanceProcessingKey(key);
+      await submitAttendanceEvent(token, {
+        enrollment_id: enrollmentId,
+        event_type: "lecturer_mark",
+      });
+      setAttendanceMarked((prev) => {
+        const current = prev[courseId] ? { ...prev[courseId] } : {};
+        current[studentId] = true;
+        return { ...prev, [courseId]: current };
+      });
+      Alert.alert("Attendance saved", "Student marked present and queued for rewards.");
+    } catch (error: any) {
+      console.warn("Attendance mark failed", error);
+      Alert.alert("Unable to mark attendance", error?.message ?? "Please try again.");
+    } finally {
+      setAttendanceProcessingKey(null);
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Today&apos;s Classes</Text>
+      <Text style={styles.subtitle}>Tap any session to take attendance, share resources, or start a call.</Text>
+      {sessions.map((session) => (
+        <View key={session.course + session.time} style={styles.card}>
+          <View style={styles.iconWrapper}>
+            <Ionicons name="people" size={28} color={palette.primary} />
+            <Text style={styles.studentCount}>{session.students}</Text>
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>{session.course}  -  {session.topic}</Text>
+            <Text style={styles.cardMeta}>{session.time}  -  {session.location}</Text>
+            <VoiceButton label={session.action} onPress={() => {}} />
+          </View>
         </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{session.course} • {session.topic}</Text>
-          <Text style={styles.cardMeta}>{session.time} • {session.location}</Text>
-          <VoiceButton label={session.action} onPress={() => {}} />
-        </View>
+      ))}
+      <VoiceButton label="Speak schedule" onPress={() => {}} />
+
+      <View style={styles.rosterSection}>
+        <Text style={styles.sectionTitle}>Course rosters</Text>
+        <Text style={styles.helper}>
+          Pull the latest enrollment list before marking attendance or awarding punctuality rewards.
+        </Text>
+        <VoiceButton label="Refresh courses" onPress={loadCourses} />
+        {loadingCourses ? (
+          <ActivityIndicator color={palette.primary} />
+        ) : courseError ? (
+          <Text style={styles.error}>{courseError}</Text>
+        ) : courses.length === 0 ? (
+          <Text style={styles.helper}>No courses are assigned to you yet.</Text>
+        ) : (
+          courses.map((course) => {
+            const roster = rosters[course.id];
+            const rosterLoaded = Boolean(roster);
+            const studentCount = roster?.students.length ?? 0;
+            return (
+              <View key={course.id} style={styles.rosterCard}>
+                <Text style={styles.cardTitle}>{course.code}  -  {course.name}</Text>
+                <Text style={styles.cardMeta}>
+                  {rosterLoaded ? `${studentCount} students enrolled` : "Roster not loaded yet"}
+                </Text>
+                <VoiceButton
+                  label={
+                    rosterLoadingId === course.id
+                      ? "Loading roster..."
+                      : rosterLoaded
+                        ? "Refresh roster"
+                        : "Load roster"
+                  }
+                  onPress={rosterLoadingId ? undefined : () => handleLoadRoster(course.id)}
+                />
+                {rosterLoaded ? (
+                  <View style={styles.rosterList}>
+                    {roster!.students.map((student) => {
+                      const marked = attendanceMarked[course.id]?.[student.id];
+                      const key = `${course.id}:${student.id}`;
+                      return (
+                        <View key={student.id} style={styles.rosterStudentRow}>
+                          <Text style={styles.rosterStudent}>{student.display_name || student.username}</Text>
+                          <VoiceButton
+                            label={
+                              marked
+                                ? "Marked"
+                                : attendanceProcessingKey === key
+                                  ? "Marking..."
+                                  : "Mark present"
+                            }
+                            onPress={
+                              marked || attendanceProcessingKey
+                                ? undefined
+                                : () => markStudentAttendance(course.id, student.id, student.enrollment_id)
+                            }
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={styles.helper}>Tap load roster to pull the latest enrollment data.</Text>
+                )}
+              </View>
+            );
+          })
+        )}
       </View>
-    ))}
-    <VoiceButton label="Speak schedule" onPress={() => {}} />
-  </ScrollView>
-);
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -76,5 +223,45 @@ const styles = StyleSheet.create({
   cardMeta: {
     ...typography.helper,
     color: palette.textSecondary,
+  },
+  rosterSection: {
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.headingL,
+    color: palette.textPrimary,
+  },
+  helper: {
+    ...typography.helper,
+    color: palette.textSecondary,
+  },
+  error: {
+    ...typography.body,
+    color: palette.danger,
+  },
+  rosterCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 24,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  rosterList: {
+    gap: spacing.sm,
+  },
+  rosterStudent: {
+    ...typography.body,
+    color: palette.textPrimary,
+  },
+  rosterStudentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
   },
 });

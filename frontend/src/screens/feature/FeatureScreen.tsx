@@ -2,7 +2,6 @@ import React from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { FeatureDetail } from "./FeatureDetail";
 import { RootStackParamList } from "@navigation/AppNavigator";
-import type { Role } from "@app-types/roles";
 import { VoiceButton } from "@components/index";
 import { View, StyleSheet } from "react-native";
 

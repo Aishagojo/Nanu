@@ -1,6 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, Text, RefreshControl } from "react-native";
-import { GreetingHeader, DashboardTile, BottomUtilityBar, FloatingAssistantButton, AlertBanner } from "@components/index";
+import {
+  GreetingHeader,
+  DashboardTile,
+  BottomUtilityBar,
+  FloatingAssistantButton,
+  AlertBanner,
+  VoiceSearchBar,
+  ChatWidget,
+} from "@components/index";
 import { palette, spacing, typography } from "@theme/index";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -33,6 +41,7 @@ const financeTiles: FinanceTile[] = [
 export const FinanceDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
+  const [showAssistant, setShowAssistant] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -41,6 +50,10 @@ export const FinanceDashboardScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
       >
         <GreetingHeader name="Finance Team" />
+        <VoiceSearchBar
+          onPress={() => navigation.navigate("Search")}
+          onVoicePress={() => navigation.navigate("Search")}
+        />
         <AlertBanner message="45 overdue accounts" variant="warning" />
         <View style={styles.kpiRow}>
           {kpis.map((kpi) => (
@@ -61,7 +74,7 @@ export const FinanceDashboardScreen: React.FC = () => {
           />
         ))}
       </ScrollView>
-      <FloatingAssistantButton onPress={() => navigation.navigate("FinanceAlerts")} />
+      <FloatingAssistantButton onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
           { label: "Home", isActive: true },
@@ -69,6 +82,7 @@ export const FinanceDashboardScreen: React.FC = () => {
           { label: "Profile", onPress: () => navigation.navigate("Profile") },
         ]}
       />
+      {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
     </View>
   );
 };

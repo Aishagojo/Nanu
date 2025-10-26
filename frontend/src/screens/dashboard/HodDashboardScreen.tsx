@@ -1,6 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
-import { GreetingHeader, DashboardTile, BottomUtilityBar, FloatingAssistantButton, AlertBanner } from "@components/index";
+import {
+  GreetingHeader,
+  DashboardTile,
+  BottomUtilityBar,
+  FloatingAssistantButton,
+  AlertBanner,
+  VoiceSearchBar,
+  ChatWidget,
+} from "@components/index";
 import { palette, spacing } from "@theme/index";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -27,6 +35,7 @@ const hodTiles: HodTile[] = [
 export const HodDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
+  const [showAssistant, setShowAssistant] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -35,6 +44,10 @@ export const HodDashboardScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
       >
         <GreetingHeader name="Dr. Kendi" />
+        <VoiceSearchBar
+          onPress={() => navigation.navigate("Search")}
+          onVoicePress={() => navigation.navigate("Search")}
+        />
         <AlertBanner message="Conflict: CS202 overlaps with ENG110" variant="danger" />
         <View style={styles.tiles}>
           {hodTiles.map((tile) => (
@@ -48,7 +61,7 @@ export const HodDashboardScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-      <FloatingAssistantButton onPress={() => navigation.navigate("HodCommunications")} />
+      <FloatingAssistantButton onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
           { label: "Home", isActive: true },
@@ -56,6 +69,7 @@ export const HodDashboardScreen: React.FC = () => {
           { label: "Profile", onPress: () => navigation.navigate("Profile") },
         ]}
       />
+      {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
     </View>
   );
 };

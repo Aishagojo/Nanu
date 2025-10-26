@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
-import { palette, radius, spacing } from "@theme/index";
+import { palette, radius } from "@theme/index";
 
 interface SpeakerButtonProps {
   onPress?: () => void;

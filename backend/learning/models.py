@@ -56,3 +56,18 @@ class Grade(TimeStampedModel):
     score = models.DecimalField(max_digits=5, decimal_places=2)
     out_of = models.DecimalField(max_digits=5, decimal_places=2, default=100)
 
+
+class AttendanceEvent(TimeStampedModel):
+    class EventType(models.TextChoices):
+        LECTURER_MARK = "lecturer_mark", "Lecturer Mark"
+        STUDENT_CHECKIN = "student_checkin", "Student Check-in"
+
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="attendance_events")
+    marked_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attendance_marked")
+    event_type = models.CharField(max_length=32, choices=EventType.choices)
+    note = models.CharField(max_length=255, blank=True)
+    reward_tagged = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+

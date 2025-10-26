@@ -51,6 +51,7 @@ export * from "./records/RecordsTranscriptsScreen";
 export * from "./records/RecordsProgressScreen";
 export * from "./records/RecordsVerificationsScreen";
 export * from "./records/RecordsReportsScreen";
+export * from "./records/RecordsEnrollmentScreen";
 
 export * from "./admin/AdminUsersScreen";
 export * from "./admin/AdminSystemsScreen";

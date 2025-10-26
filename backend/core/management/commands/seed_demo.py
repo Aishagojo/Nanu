@@ -8,7 +8,7 @@ from repository.models import Resource
 DEMO_USERS = [
     {
         "username": "student1",
-        "password": "Student",
+        "password": "Student@2025",
         "role": "student",
         "email": "student1@example.com",
         "display_name": "Aisha Student",

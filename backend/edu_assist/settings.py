@@ -86,6 +86,8 @@ USE_TZ = True
 STATIC_URL = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+RECORDS_PROVISION_PASSCODE = os.environ.get("RECORDS_PROVISION_PASSCODE", "Records@2025")
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {

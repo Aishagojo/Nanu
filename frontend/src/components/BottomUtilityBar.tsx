@@ -16,7 +16,7 @@ interface BottomUtilityBarProps {
 export const BottomUtilityBar: React.FC<BottomUtilityBarProps> = ({ items }) => {
   return (
     <View style={styles.container} accessibilityRole="tablist">
-      {items.map((item, index) => (
+      {items.map((item) => (
         <TouchableOpacity
           key={item.label}
           accessibilityRole="tab"

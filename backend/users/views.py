@@ -1,15 +1,22 @@
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from core.models import AuditLog
 
-from .models import User, ParentStudentLink
-from .serializers import UserSerializer, ParentStudentLinkSerializer
+from .models import User, ParentStudentLink, UserProvisionRequest
+from .serializers import (
+    UserSerializer,
+    ParentStudentLinkSerializer,
+    UserProvisionSerializer,
+    UserProvisionRequestSerializer,
+)
+from .notifications import notify_provision_request_approval
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -37,6 +44,9 @@ class ParentStudentLinkViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role not in [User.Roles.ADMIN, User.Roles.HOD, User.Roles.RECORDS] and not user.is_staff:
             raise PermissionDenied("Only admin, HOD, or records staff can create parent links.")
+        passcode = self.request.data.get("records_passcode")
+        if passcode != settings.RECORDS_PROVISION_PASSCODE:
+            raise PermissionDenied("Invalid records approval passcode.")
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -44,6 +54,105 @@ class ParentStudentLinkViewSet(viewsets.ModelViewSet):
         if user.role not in [User.Roles.ADMIN, User.Roles.HOD, User.Roles.RECORDS] and not user.is_staff:
             raise PermissionDenied("Only admin, HOD, or records staff can delete parent links.")
         instance.delete()
+
+
+class UserProvisionRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = UserProvisionRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        allowed_roles = {User.Roles.RECORDS, User.Roles.ADMIN, User.Roles.HOD}
+        qs = UserProvisionRequest.objects.select_related(
+            "requested_by", "reviewed_by", "created_user"
+        )
+        if user.role in allowed_roles or user.is_staff:
+            return qs
+        return qs.none()
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        allowed_roles = {User.Roles.RECORDS, User.Roles.ADMIN, User.Roles.HOD}
+        if user.role not in allowed_roles and not user.is_staff:
+            raise PermissionDenied("Only admin, HOD, or records staff can submit provisioning requests.")
+        serializer.save(requested_by=user)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def approve(self, request, pk=None):
+        provision_request = self.get_object()
+        acting = request.user
+        if acting.role not in {User.Roles.ADMIN, User.Roles.HOD} and not acting.is_staff:
+            raise PermissionDenied("Only admin or HOD users may approve requests.")
+        if provision_request.status != UserProvisionRequest.Status.PENDING:
+            raise ValidationError({"detail": "Request has already been processed."})
+        if User.objects.filter(username=provision_request.username).exists():
+            raise ValidationError({"detail": "A user with this username already exists."})
+        temp_password = User.objects.make_random_password()
+        payload = {
+            "username": provision_request.username,
+            "password": temp_password,
+            "email": provision_request.email,
+            "display_name": provision_request.display_name,
+            "role": provision_request.role,
+        }
+        serializer = UserProvisionSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        provision_request.status = UserProvisionRequest.Status.APPROVED
+        provision_request.reviewed_by = acting
+        provision_request.reviewed_at = timezone.now()
+        provision_request.created_user = user
+        provision_request.rejection_reason = ""
+        provision_request.temporary_password = temp_password
+        provision_request.save(update_fields=["status", "reviewed_by", "reviewed_at", "created_user", "rejection_reason", "temporary_password"])
+        AuditLog.objects.create(
+            user=acting,
+            action="user_provision_approved",
+            model=UserProvisionRequest._meta.label,
+            object_id=str(provision_request.pk),
+            changes={"username": provision_request.username, "role": provision_request.role},
+        )
+        notify_provision_request_approval(provision_request, temp_password)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "temporary_password": temp_password,
+            }
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def reject(self, request, pk=None):
+        provision_request = self.get_object()
+        acting = request.user
+        if acting.role not in {User.Roles.ADMIN, User.Roles.HOD} and not acting.is_staff:
+            raise PermissionDenied("Only admin or HOD users may reject requests.")
+        if provision_request.status != UserProvisionRequest.Status.PENDING:
+            raise ValidationError({"detail": "Request has already been processed."})
+        reason = request.data.get("reason", "").strip()
+        provision_request.status = UserProvisionRequest.Status.REJECTED
+        provision_request.reviewed_by = acting
+        provision_request.reviewed_at = timezone.now()
+        provision_request.rejection_reason = reason
+        provision_request.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason"])
+        AuditLog.objects.create(
+            user=acting,
+            action="user_provision_rejected",
+            model=UserProvisionRequest._meta.label,
+            object_id=str(provision_request.pk),
+            changes={"reason": reason},
+        )
+        return Response(UserProvisionRequestSerializer(provision_request).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def email_again(self, request, pk=None):
+        provision_request = self.get_object()
+        acting = request.user
+        if acting.role not in {User.Roles.ADMIN, User.Roles.HOD} and not acting.is_staff:
+            raise PermissionDenied("Only admin or HOD users may resend credentials.")
+        if provision_request.status != UserProvisionRequest.Status.APPROVED or not provision_request.temporary_password:
+            raise ValidationError({"detail": "Only approved requests with recorded credentials can be resent."})
+        notify_provision_request_approval(provision_request, provision_request.temporary_password)
+        return Response({"detail": "Credentials re-sent to the requester."})
 
 
 @api_view(["GET"])
@@ -241,3 +350,23 @@ def assign_role(request):
                 updates.append("is_staff")
     target.save(update_fields=list(set(updates)))
     return Response(UserSerializer(target).data)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def provision_user(request):
+    acting = request.user
+    allowed_roles = {User.Roles.ADMIN, User.Roles.HOD}
+    if acting.role not in allowed_roles and not acting.is_staff:
+        raise PermissionDenied("Only admin or HOD users can bypass the approval queue.")
+    serializer = UserProvisionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    AuditLog.objects.create(
+        user=acting,
+        action="user_provision",
+        model=User._meta.label,
+        object_id=str(user.pk),
+        changes={"provisioned_role": user.role},
+    )
+    return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)

@@ -31,6 +31,14 @@ export const StudentLibraryScreen: React.FC = () => {
   const [resources, setResources] = useState<ApiResource[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const fileHost = useMemo(() => {
+    try {
+      const parsed = new URL(API_BASE);
+      return parsed.origin;
+    } catch {
+      return API_BASE.replace(/\/api\/?$/, "");
+    }
+  }, []);
 
   const loadResources = useCallback(async () => {
     if (!token) {
@@ -54,20 +62,23 @@ export const StudentLibraryScreen: React.FC = () => {
     loadResources();
   }, [loadResources]);
 
-  const handleOpen = useCallback((resource: ApiResource) => {
-    const target = resource.url || resource.file;
-    if (!target) {
-      Alert.alert("Unavailable", "This resource is not linked or uploaded yet.");
-      return;
-    }
-    const href =
-      target.startsWith("http://") || target.startsWith("https://")
-        ? target
-        : `${API_BASE.replace(/\/$/, "")}/${target.replace(/^\//, "")}`;
-    Linking.openURL(href).catch(() => {
-      Alert.alert("Unable to open", "We could not launch the resource link.");
-    });
-  }, []);
+  const handleOpen = useCallback(
+    (resource: ApiResource) => {
+      const target = resource.url || resource.file;
+      if (!target) {
+        Alert.alert("Unavailable", "This resource is not linked or uploaded yet.");
+        return;
+      }
+      const href =
+        target.startsWith("http://") || target.startsWith("https://")
+          ? target
+          : `${fileHost.replace(/\/$/, "")}/${target.replace(/^\//, "")}`;
+      Linking.openURL(href).catch(() => {
+        Alert.alert("Unable to open", "We could not launch the resource link.");
+      });
+    },
+    [fileHost]
+  );
 
   const content = useMemo(() => {
     if (loading) {

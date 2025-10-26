@@ -9,3 +9,4 @@ export * from "./RoleBadge";
 export * from "./NotificationBell";
 export * from "./ChatWidget";
 export * from "./FaqModal";
+export * from "./VoiceSearchBar";

@@ -83,3 +83,45 @@ class ParentStudentLink(TimeStampedModel):
     def __str__(self):
         rel = f" ({self.relationship})" if self.relationship else ""
         return f"{self.parent.username} -> {self.student.username}{rel}"
+
+
+class UserProvisionRequest(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    requested_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        related_name="provision_requests",
+    )
+    username = models.CharField(max_length=150)
+    display_name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    role = models.CharField(max_length=32, choices=User.Roles.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(
+        "users.User",
+        null=True,
+        blank=True,
+        related_name="provision_reviews",
+        on_delete=models.SET_NULL,
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    created_user = models.ForeignKey(
+        "users.User",
+        null=True,
+        blank=True,
+        related_name="provision_source_request",
+        on_delete=models.SET_NULL,
+    )
+    temporary_password = models.CharField(max_length=128, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ("username", "status")
+
+    def __str__(self):
+        return f"{self.username} ({self.role}) - {self.status}"

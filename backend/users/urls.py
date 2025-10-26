@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet,
     ParentStudentLinkViewSet,
+    UserProvisionRequestViewSet,
     me,
     password_reset_request,
     password_reset_confirm,
@@ -12,11 +13,13 @@ from .views import (
     totp_activate,
     totp_disable,
     assign_role,
+    provision_user,
 )
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"parent-links", ParentStudentLinkViewSet, basename="parent-link")
+router.register(r"provision-requests", UserProvisionRequestViewSet, basename="provision-request")
 
 urlpatterns = router.urls + [
     path("me/", me, name="users-me"),
@@ -27,4 +30,5 @@ urlpatterns = router.urls + [
     path("totp/activate/", totp_activate, name="users-totp-activate"),
     path("totp/disable/", totp_disable, name="users-totp-disable"),
     path("assign-role/", assign_role, name="users-assign-role"),
+    path("provision/", provision_user, name="users-provision"),
 ]

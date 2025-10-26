@@ -41,6 +41,7 @@ import {
   RecordsProgressScreen,
   RecordsVerificationsScreen,
   RecordsReportsScreen,
+  RecordsEnrollmentScreen,
   AdminUsersScreen,
   AdminSystemsScreen,
   AdminAnalyticsScreen,
@@ -96,6 +97,7 @@ export type RootStackParamList = {
   RecordsProgress: undefined;
   RecordsVerifications: undefined;
   RecordsReports: undefined;
+  RecordsEnrollment: undefined;
   AdminUsers: undefined;
   AdminSystems: undefined;
   AdminAnalytics: undefined;
@@ -197,6 +199,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="RecordsProgress" component={RecordsProgressScreen} />
         <Stack.Screen name="RecordsVerifications" component={RecordsVerificationsScreen} />
         <Stack.Screen name="RecordsReports" component={RecordsReportsScreen} />
+        <Stack.Screen name="RecordsEnrollment" component={RecordsEnrollmentScreen} />
         <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
         <Stack.Screen name="AdminSystems" component={AdminSystemsScreen} />
         <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />

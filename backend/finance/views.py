@@ -115,18 +115,26 @@ class FeeSummaryView(APIView):
                 }
             )
 
+        remaining = max(total_amount - total_paid, Decimal("0"))
+        can_view_amounts = user.role in [User.Roles.PARENT, User.Roles.FINANCE]
         summary = {
             "student": {
                 "id": student.id,
                 "username": student.username,
                 "display_name": student.display_name,
             },
-            "totals": {
+            "status_counts": status_counts if can_view_amounts else {},
+            "items": item_payload if can_view_amounts else [],
+            "totals": None,
+            "fee_status": "Clear" if remaining <= 0 else "Pending clearance",
+            "message": None,
+        }
+        if can_view_amounts:
+            summary["totals"] = {
                 "amount": float(total_amount),
                 "paid": float(total_paid),
-                "balance": float(max(total_amount - total_paid, Decimal("0"))),
-            },
-            "status_counts": status_counts,
-            "items": item_payload,
-        }
+                "balance": float(remaining),
+            }
+        else:
+            summary["message"] = "Fees are visible to parents and finance officers only. Status: out of session until clearance."
         return Response(summary)

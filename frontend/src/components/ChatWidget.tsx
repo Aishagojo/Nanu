@@ -1,13 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, Animated } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import * as Speech from "expo-speech";
 import { palette, spacing, typography, radius } from "@theme/index";
 import { useAuth } from "@context/AuthContext";
 import type { Role } from "@app-types/roles";
-import { globalFaq } from "@data/faq";
+import { transcribeAudio } from "@services/api";
 
 let API_BASE = "";
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   API_BASE = require("@env").EXPO_PUBLIC_API_URL || "";
 } catch {
   API_BASE = "";
@@ -44,46 +46,142 @@ const roleMatchers: Array<{ role: Role; keywords: string[] }> = [
   { role: "librarian", keywords: ["librarian", "library", "resource desk"] },
 ];
 
+const introMessages: Message[] = [
+  {
+    id: "intro-1",
+    text: "Hi, I'm Nanu! I can guide you through EduAssist in simple steps.",
+    from: "bot",
+  },
+  {
+    id: "intro-2",
+    text: "We currently support 1,250 students and 160 lecturers. Tourism & Travel has 320 learners, 24 lecturers, 18 labs, and a field trip every term.",
+    from: "bot",
+  },
+  {
+    id: "intro-3",
+    text: "Ask me about assignments, rewards, fees, or travel facts. You can also speak using the microphone button.",
+    from: "bot",
+  },
+];
+
+const knowledgeBase: Array<{ keywords: string[]; answer: string }> = [
+  {
+    keywords: ["tourism", "travel", "field trip", "trip"],
+    answer:
+      "Tourism & Travel has 320 students and 24 lecturers. There are 18 lab sessions each term plus one field trip focused on safety, routes, and hospitality practice. Open the Repository screen to download tour plans, maps, and packing checklists.",
+  },
+  {
+    keywords: ["assignment", "homework", "submit", "video"],
+    answer:
+      "Assignments accept text, pictures, voice, or video. Tap the Assignments tile, pick the task, then use the microphone or camera buttons. Lecturers get an alert instantly and can respond in the Messages screen.",
+  },
+  {
+    keywords: ["lecturer", "teacher", "staff", "info"],
+    answer:
+      "We track 160 lecturers. Each lecturer dashboard shows classes, attendance, and communication threads. Parents can message a lecturer via the Messages tile and see plain-language summaries of replies.",
+  },
+  {
+    keywords: ["students", "numbers", "enrolled"],
+    answer:
+      "Across campus there are 1,250 students. Tourism & Travel has 320 learners, ICT 280, Hospitality 210, and the rest are in Business, Special Education, and Arts.",
+  },
+  {
+    keywords: ["fees", "balance", "finance", "payment"],
+    answer:
+      "Only parents and Finance officers see exact fee balances. Everyone else sees a friendly status such as “pending clearance.” Students must clear fees before exam registration, and Finance can log payments in the Finance Students screen.",
+  },
+  {
+    keywords: ["rewards", "points", "token"],
+    answer:
+      "Rewards come from on-time attendance, early submissions, and helping classmates. Fill the progress bar to unlock up to three claims per term. Each reward card shows the points you need before tapping Claim.",
+  },
+];
+
+const baseRecordingPreset = Audio.RecordingOptionsPresets.HIGH_QUALITY;
+const recordingOptions: Audio.RecordingOptions = {
+  ...baseRecordingPreset,
+  android: { ...baseRecordingPreset.android, extension: ".m4a", numberOfChannels: 1 },
+  ios: { ...baseRecordingPreset.ios, extension: ".m4a", numberOfChannels: 1 },
+  web: { mimeType: "audio/mp4", bitsPerSecond: 128000 },
+};
+
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "intro",
-      text: 'Hi! You can ask things like "Open student login" or tap a common question below.',
-      from: "bot",
-    },
-  ]);
+  const { state } = useAuth();
+  const token = state.accessToken;
+  const userName = useMemo(
+    () => state.user?.display_name || state.user?.username || "friend",
+    [state.user?.display_name, state.user?.username]
+  );
+  const [messages, setMessages] = useState<Message[]>(introMessages);
   const [input, setInput] = useState("");
-  const auth = useAuth();
-  const quickFaqs = useMemo(() => globalFaq.slice(0, 4), []);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const send = (text: string) => {
-    if (!text || !text.trim()) return;
-    const cleaned = text.trim();
-    const userMsg: Message = { id: String(Date.now()), text: cleaned, from: "user" };
-    setMessages((m) => [...m, userMsg]);
+  const speakReply = useCallback((text: string) => {
+    try {
+      Speech.stop();
+      Speech.speak(text, { rate: 1, pitch: 1 });
+    } catch {
+      // ignore speech errors
+    }
+  }, []);
 
-    const lower = cleaned.toLowerCase();
+  const [welcomed, setWelcomed] = useState(false);
 
-    if (onNavigateRole) {
-      const matched = roleMatchers.find((item) => item.keywords.some((keyword) => lower.includes(keyword)));
-      if (matched) {
-        const label = roleLabels[matched.role];
-        const botMsg: Message = {
-          id: String(Date.now() + 1),
-          text: `Opening the ${label} experience for you.`,
-          from: "bot",
-        };
-        setMessages((m) => [...m, botMsg]);
-        onNavigateRole(matched.role);
-        setInput("");
+  const appendBotMessage = useCallback(
+    (text: string) => {
+      const botMsg: Message = { id: String(Date.now()), text, from: "bot" };
+      setMessages((prev) => [...prev, botMsg]);
+      speakReply(text);
+    },
+    [speakReply]
+  );
+
+  const fetchWebAnswer = useCallback(async (query: string) => {
+    try {
+      const resp = await fetch(
+        `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1`
+      );
+      const data = await resp.json();
+      if (data?.AbstractText) return data.AbstractText;
+      const related = data?.RelatedTopics?.find((topic: any) => topic?.Text);
+      if (related?.Text) return related.Text;
+    } catch {
+      // ignore
+    }
+    return null;
+  }, []);
+
+  const send = useCallback(
+    async (text: string) => {
+      if (!text || !text.trim()) return;
+      const cleaned = text.trim();
+      const userMsg: Message = { id: String(Date.now()), text: cleaned, from: "user" };
+      setMessages((m) => [...m, userMsg]);
+      setInput("");
+
+      const lower = cleaned.toLowerCase();
+
+      if (onNavigateRole) {
+        const matched = roleMatchers.find((item) => item.keywords.some((keyword) => lower.includes(keyword)));
+        if (matched) {
+          const label = roleLabels[matched.role];
+          appendBotMessage(`Opening the ${label} dashboard. I will stay here if you need more help.`);
+          onNavigateRole(matched.role);
+          return;
+        }
+      }
+
+      const kbMatch = knowledgeBase.find((entry) => entry.keywords.some((keyword) => lower.includes(keyword)));
+      if (kbMatch) {
+        appendBotMessage(kbMatch.answer);
         return;
       }
-    }
 
-    (async () => {
       try {
         const url = `${API_BASE || ""}/api/communications/support/chat/`;
-        const token = auth?.state?.accessToken;
         const resp = await fetch(url, {
           method: "POST",
           headers: {
@@ -93,33 +191,137 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
           body: JSON.stringify({ text: cleaned }),
         });
         const data = await resp.json();
-        const reply = data?.reply || "I'm checking that for you. If it persists, reach out to support.";
-        const botMsg: Message = { id: String(Date.now() + 2), text: reply, from: "bot" };
-        setMessages((m) => [...m, botMsg]);
-      } catch (error) {
-        const botMsg: Message = {
-          id: String(Date.now() + 2),
-          text: "I couldn't reach the help desk right now. Please try again in a moment.",
-          from: "bot",
-        };
-        setMessages((m) => [...m, botMsg]);
+        const reply = data?.reply;
+        if (reply) {
+          appendBotMessage(reply);
+          return;
+        }
+      } catch {
+        // fall through to web lookup
       }
-    })();
-    setInput("");
-  };
+
+      const webAnswer = await fetchWebAnswer(cleaned);
+      if (webAnswer) {
+        appendBotMessage(webAnswer);
+        return;
+      }
+
+      appendBotMessage(
+        "I could not find that yet. Try asking about assignments, tourism trips, rewards, or fees and I will explain it step by step."
+      );
+    },
+    [appendBotMessage, fetchWebAnswer, onNavigateRole, token]
+  );
+
+  const ensureMicPermission = useCallback(async () => {
+    let response = permissionResponse;
+    if (!response) {
+      response = await Audio.getPermissionsAsync();
+    }
+    if (response?.granted) {
+      return true;
+    }
+    const requested = await requestPermission();
+    if (!requested?.granted) {
+      Alert.alert("Microphone blocked", "Enable microphone access to speak with Nanu.");
+      return false;
+    }
+    return true;
+  }, [permissionResponse, requestPermission]);
+
+  const startRecording = useCallback(async () => {
+    const ok = await ensureMicPermission();
+    if (!ok || isListening) return;
+    try {
+      setIsListening(true);
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        staysActiveInBackground: false,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+      });
+      const rec = new Audio.Recording();
+      await rec.prepareToRecordAsync(recordingOptions);
+      await rec.startAsync();
+      setRecording(rec);
+    } catch (error) {
+      console.warn("Mic start failed", error);
+      setIsListening(false);
+    }
+  }, [ensureMicPermission, isListening]);
+
+  const stopRecording = useCallback(async () => {
+    if (!recording) return;
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      setIsListening(false);
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      if (!uri) {
+        Alert.alert("No audio", "I could not capture your voice. Please try again.");
+        return;
+      }
+      if (!token) {
+        Alert.alert("Login required", "Sign in again to use voice input.");
+        return;
+      }
+      const { text } = await transcribeAudio(token, uri, "audio/m4a");
+      if (text) {
+        send(text);
+      } else {
+        appendBotMessage("I could not understand that. Please try speaking again.");
+      }
+    } catch (error) {
+      console.warn("Mic stop failed", error);
+      Alert.alert("Recording error", "Something went wrong while listening. Please try again.");
+      setRecording(null);
+      setIsListening(false);
+    }
+  }, [appendBotMessage, recording, send, token]);
+
+  useEffect(() => {
+    if (welcomed) return;
+    const welcome = `Hello ${userName}! I'm Nanu. Ask me anything about your classes, tourism trips, or even questions outside the app.`;
+    appendBotMessage(welcome);
+    setWelcomed(true);
+  }, [appendBotMessage, userName, welcomed]);
+
+  const handleMicPress = useCallback(() => {
+    if (isListening) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [isListening, startRecording, stopRecording]);
+
+  useEffect(() => {
+    if (isListening) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.1, duration: 350, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+    pulseAnim.setValue(1);
+  }, [isListening, pulseAnim]);
 
   return (
-    <View style={styles.overlay} accessible accessibilityLabel="EduAssist helper">
+    <View style={styles.overlay} accessible accessibilityLabel="Nanu assistant">
       <View style={styles.header}>
-        <Text style={styles.title}>EduAssist Helper</Text>
-        <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close helper">
-          <Text style={styles.close}>Close</Text>
+        <Text style={styles.title}>Nanu</Text>
+        <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close Nanu">
+          <Ionicons name="close" size={22} color={palette.accent} />
         </TouchableOpacity>
       </View>
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
         style={styles.messages}
+        contentContainerStyle={{ paddingBottom: spacing.sm }}
         renderItem={({ item }) => (
           <View style={[styles.message, item.from === "bot" ? styles.bot : styles.user]}>
             <Text style={item.from === "bot" ? styles.botText : styles.userText}>{item.text}</Text>
@@ -127,29 +329,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
         )}
       />
 
-      <View style={styles.suggestions}>
-        {quickFaqs.map((faq) => (
-          <TouchableOpacity
-            key={faq.question}
-            style={styles.suggestion}
-            onPress={() => send(faq.question)}
-            accessibilityRole="button"
-          >
-            <Text style={styles.suggestionText}>{faq.question}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <View style={styles.inputRow}>
+        <Animated.View style={[styles.micWrapper, { transform: [{ scale: pulseAnim }] }]}>
+          <TouchableOpacity style={[styles.micButton, isListening && styles.micButtonActive]} onPress={handleMicPress} accessibilityRole="button">
+            <Ionicons name={isListening ? "stop-circle" : "mic"} size={20} color={isListening ? palette.surface : palette.primary} />
+          </TouchableOpacity>
+        </Animated.View>
         <TextInput
           style={styles.input}
-          placeholder='Describe your issue (e.g. "Open student login")'
+          placeholder="Ask Nanu anything..."
           value={input}
           onChangeText={setInput}
-          accessibilityLabel="help input"
+          accessibilityLabel="Ask Nanu"
         />
         <TouchableOpacity style={styles.send} onPress={() => send(input)} accessibilityRole="button">
-          <Text style={styles.sendText}>Send</Text>
+          <Ionicons name="arrow-up-circle" size={24} color={palette.accent} />
         </TouchableOpacity>
       </View>
     </View>
@@ -159,18 +353,19 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
 const styles = StyleSheet.create({
   overlay: {
     position: "absolute",
-    bottom: 96,
-    right: 16,
+    right: spacing.md,
+    bottom: spacing.xl,
     width: 320,
-    maxHeight: 520,
+    maxWidth: "92%",
+    maxHeight: 560,
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 12,
-    elevation: 16,
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    elevation: 18,
   },
   header: {
     flexDirection: "row",
@@ -179,27 +374,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: { ...typography.headingL, color: palette.textPrimary },
-  close: { color: palette.accent },
-  messages: { maxHeight: 320, marginBottom: spacing.sm },
+  messages: { maxHeight: 420 },
   message: { padding: spacing.sm, borderRadius: 12, marginBottom: spacing.xs, maxWidth: "95%" },
   bot: { backgroundColor: palette.background, alignSelf: "flex-start" },
   user: { backgroundColor: palette.primary, alignSelf: "flex-end" },
   botText: { color: palette.textPrimary },
   userText: { color: palette.surface },
-  suggestions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginBottom: spacing.sm },
-  suggestion: { backgroundColor: palette.surface, paddingVertical: 6, paddingHorizontal: spacing.sm, borderRadius: 8 },
-  suggestionText: { color: palette.textSecondary, ...typography.helper },
-  inputRow: { flexDirection: "row", alignItems: "center" },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm },
   input: {
     flex: 1,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: palette.surface,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: palette.disabled,
   },
-  send: { paddingHorizontal: spacing.md, paddingVertical: 8 },
-  sendText: { color: palette.accent, ...typography.body },
+  micWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: palette.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  micButtonActive: {
+    backgroundColor: palette.primary,
+  },
+  send: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
 });
-

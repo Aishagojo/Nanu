@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import {
   GreetingHeader,
@@ -8,6 +8,8 @@ import {
   FloatingAssistantButton,
   BottomUtilityBar,
   NotificationBell,
+  VoiceSearchBar,
+  ChatWidget,
 } from "@components/index";
 import { palette, spacing } from "@theme/index";
 import { useNavigation } from "@react-navigation/native";
@@ -72,6 +74,7 @@ const studentTiles: StudentTile[] = [
 export const StudentDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
+  const [showAssistant, setShowAssistant] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -80,6 +83,10 @@ export const StudentDashboardScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
       >
         <GreetingHeader name="Aisha" rightAccessory={<NotificationBell />} />
+        <VoiceSearchBar
+          onPress={() => navigation.navigate("Search")}
+          onVoicePress={() => navigation.navigate("Search")}
+        />
         <AlertBanner message="Math class starts in 15 minutes" variant="warning" />
         <View style={styles.tiles}>
           {studentTiles.map((tile) => (
@@ -99,8 +106,7 @@ export const StudentDashboardScreen: React.FC = () => {
         onPress={() => navigation.navigate("StudentTimetable")}
         accessibilityHint="Reads today's classes"
       />
-      <FloatingAssistantButton label="Chat" onPress={() => navigation.navigate("StudentCommunicate")}
-      />
+      <FloatingAssistantButton label="Chat" onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
           { label: "Home", isActive: true },
@@ -109,6 +115,7 @@ export const StudentDashboardScreen: React.FC = () => {
           { label: "Profile", onPress: () => navigation.navigate("Profile") },
         ]}
       />
+      {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
     </View>
   );
 };

@@ -1,12 +1,21 @@
+from decimal import Decimal
+
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework import permissions, viewsets, status
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from finance.models import FeeItem
 from users.models import User
-from .models import Course, Unit, Enrollment
-from .serializers import CourseSerializer, UnitSerializer, EnrollmentSerializer
+from .models import Course, Unit, Enrollment, AttendanceEvent
+from .serializers import (
+    CourseSerializer,
+    UnitSerializer,
+    EnrollmentSerializer,
+    AttendanceEventSerializer,
+)
+from .rewards import dispatch_attendance_reward
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -137,3 +146,141 @@ class ProgressSummaryView(APIView):
             "total_units": total_units,
         }
         return Response(response)
+
+
+class QuickEnrollmentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.role not in [User.Roles.HOD, User.Roles.RECORDS] and not user.is_staff:
+            raise PermissionDenied("Only HOD, records, or staff may enroll students.")
+        student_id = request.data.get("student_id")
+        student_username = request.data.get("student_username")
+        course_id = request.data.get("course_id")
+        course_code = request.data.get("course_code")
+        if not (student_id or student_username):
+            raise ValidationError({"detail": "student_id or student_username is required."})
+        if not (course_id or course_code):
+            raise ValidationError({"detail": "course_id or course_code is required."})
+        if student_username:
+            student = get_object_or_404(User, username=student_username, role=User.Roles.STUDENT)
+        else:
+            student = get_object_or_404(User, pk=student_id, role=User.Roles.STUDENT)
+        if course_code:
+            course = get_object_or_404(Course, code__iexact=course_code)
+        else:
+            course = get_object_or_404(Course, pk=course_id)
+        serializer = EnrollmentSerializer(
+            data={"student": student.id, "course": course.id, "active": True}
+        )
+        serializer.is_valid(raise_exception=True)
+        enrollment = serializer.save()
+        return Response(
+            {
+                "detail": "Student enrolled successfully.",
+                "enrollment": EnrollmentSerializer(enrollment).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CourseRosterView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id):
+        course = get_object_or_404(Course, pk=course_id)
+        user = request.user
+        allowed_roles = {User.Roles.HOD, User.Roles.RECORDS, User.Roles.ADMIN}
+        if not (
+            user.role in allowed_roles
+            or user.is_staff
+            or (course.owner_id and course.owner_id == user.id)
+        ):
+            raise PermissionDenied("You are not allowed to view this roster.")
+
+        enrollments = (
+            Enrollment.objects.filter(course=course)
+            .select_related("student")
+            .order_by("student__username")
+        )
+        data = {
+            "course": {
+                "id": course.id,
+                "code": course.code,
+                "name": course.name,
+            },
+            "students": [
+                {
+                    "id": enrollment.student.id,
+                    "username": enrollment.student.username,
+                    "display_name": enrollment.student.display_name,
+                    "active": enrollment.active,
+                    "enrollment_id": enrollment.id,
+                }
+                for enrollment in enrollments
+            ],
+        }
+        return Response(data)
+
+
+class AttendanceCheckInView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        event_type = request.data.get("event_type") or AttendanceEvent.EventType.LECTURER_MARK
+        note = request.data.get("note", "")
+        enrollment_id = request.data.get("enrollment_id")
+        student_id = request.data.get("student_id")
+        course_id = request.data.get("course_id")
+
+        if event_type not in AttendanceEvent.EventType.values:
+            raise ValidationError({"detail": f"Invalid event_type '{event_type}'."})
+
+        if enrollment_id:
+            enrollment = get_object_or_404(Enrollment, pk=enrollment_id)
+        elif student_id and course_id:
+            enrollment = get_object_or_404(Enrollment, student_id=student_id, course_id=course_id)
+        else:
+            raise ValidationError({"detail": "Provide enrollment_id or (student_id + course_id)."})
+
+        if event_type == AttendanceEvent.EventType.STUDENT_CHECKIN:
+            if user.role != User.Roles.STUDENT or enrollment.student_id != user.id:
+                raise PermissionDenied("Only the student may confirm their own attendance.")
+        else:
+            if user.role == User.Roles.LECTURER:
+                if enrollment.course.owner_id != user.id:
+                    raise PermissionDenied("Lecturers may only mark attendance for their courses.")
+            elif user.role not in {User.Roles.HOD, User.Roles.RECORDS} and not user.is_staff:
+                raise PermissionDenied("Role not allowed to mark attendance.")
+
+        event = AttendanceEvent.objects.create(
+            enrollment=enrollment,
+            marked_by=user,
+            event_type=event_type,
+            note=note,
+        )
+        dispatch_attendance_reward(event)
+        return Response(AttendanceEventSerializer(event).data, status=status.HTTP_201_CREATED)
+
+
+class ExamRegistrationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.role != User.Roles.STUDENT:
+            raise PermissionDenied("Only students can submit exam registration requests.")
+        outstanding = Decimal("0")
+        for item in FeeItem.objects.filter(student=user):
+            outstanding += max(item.amount - item.paid, Decimal("0"))
+        if outstanding > 0:
+            return Response(
+                {
+                    "detail": "Fee clearance required before exam registration. Contact finance for assistance.",
+                    "allowed": False,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return Response({"detail": "Exam registration confirmed.", "allowed": True})
