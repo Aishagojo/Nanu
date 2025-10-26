@@ -1,6 +1,6 @@
-# EduAssist Platform
+# Nanu Platform
 
-EduAssist is a voice-first learning companion designed with Kenya Methodist University and partner schools in mind. The platform blends a modular Django REST API with an Expo (React Native) mobile app so that neurodiverse students, their families, and campus staff can share the same data, receive timely nudges, and stay rewarded for progress.
+Nanu is the voice-first OS powering inclusive education. Built for high-needs students like those with Down syndrome, our platform uses AI and Hedera DLT to create a scalable, adaptive learning environment for the entire neurodiverse community
 
 ---
 
@@ -163,7 +163,7 @@ Each account comes with sensible `is_staff` / `is_superuser` settings so you can
 - Extend notifications to use the backend `notifications` app (and eventually push) instead of local polling only.
 - Add advanced accessibility settings (dynamic font scaling, offline voice packs) and collect anonymous telemetry to keep improving neurodiverse experiences.
 
-EduAssist is steadily evolving into a unified, voice-forward experience that rewards positive behavior, keeps families in the loop, and gives staff clear controls"without compromising on clarity or accessibility.
+Nanu is steadily evolving into a unified, voice-forward experience that rewards positive behavior, keeps families in the loop, and gives staff clear controls without compromising on clarity or accessibility.
 
 
 
