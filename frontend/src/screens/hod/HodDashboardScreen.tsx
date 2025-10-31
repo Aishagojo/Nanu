@@ -1,4 +1,3 @@
-/* eslint jsx-quotes: "off" */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { VoiceButton } from '@components/index';
@@ -51,7 +50,7 @@ export const HodDashboardScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size='large' color={palette.primary} />
+        <ActivityIndicator size="large" color={palette.primary} />
       </View>
     );
   }
@@ -61,9 +60,9 @@ export const HodDashboardScreen: React.FC = () => {
       <View style={styles.centered}>
         <Text style={styles.error}>{error}</Text>
         <VoiceButton
-          label='Try Again'
+          label="Try Again"
           onPress={loadDashboardData}
-          accessibilityHint='Reload dashboard data'
+          accessibilityHint="Reload dashboard data"
         />
       </View>
     );

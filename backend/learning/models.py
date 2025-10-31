@@ -32,7 +32,6 @@ class Course(TimeStampedModel):
         ],
         default='draft'
     )
-    MAX_COURSES_PER_LECTURER = 4
 
     def __str__(self):
         return f"{self.code} - {self.name}"
@@ -43,26 +42,6 @@ class Course(TimeStampedModel):
             ('approve_course', 'Can approve course'),
             ('assign_lecturer', 'Can assign lecturer to course'),
         ]
-
-    def clean(self):
-        super().clean()
-        if self.lecturer_id:
-            active_courses = (
-                Course.objects.filter(lecturer_id=self.lecturer_id)
-                .exclude(pk=self.pk)
-                .exclude(status='archived')
-                .count()
-            )
-            if active_courses >= self.MAX_COURSES_PER_LECTURER:
-                raise ValidationError(
-                    {
-                        'lecturer': f'Lecturers can only be assigned to {self.MAX_COURSES_PER_LECTURER} courses.'
-                    }
-                )
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super().save(*args, **kwargs)
 
 
 class Unit(TimeStampedModel):
@@ -120,3 +99,4 @@ class AttendanceEvent(TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+
