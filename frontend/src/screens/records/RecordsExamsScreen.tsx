@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const uploads = [
-  { file: "ICT201_midterm.csv", status: "Ready to validate", icon: "cloud-upload" },
-  { file: "Therapy_reports.xlsx", status: "Published", icon: "checkmark-circle" },
+  { file: 'ICT201_midterm.csv', status: 'Ready to validate', icon: 'cloud-upload' },
+  { file: 'Therapy_reports.xlsx', status: 'Published', icon: 'checkmark-circle' },
 ];
 
 export const RecordsExamsScreen: React.FC = () => (
@@ -19,11 +19,11 @@ export const RecordsExamsScreen: React.FC = () => (
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.file}</Text>
           <Text style={styles.cardMeta}>{item.status}</Text>
-          <VoiceButton label="Open" onPress={() => {}} />
+          <VoiceButton label='Open' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label="Download template" onPress={() => {}} />
+    <VoiceButton label='Download template' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -32,12 +32,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

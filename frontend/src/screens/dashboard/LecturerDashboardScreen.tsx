@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
+import React, { useState } from 'react';
+import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -9,13 +9,13 @@ import {
   NotificationBell,
   VoiceSearchBar,
   ChatWidget,
-} from "@components/index";
-import { palette, spacing } from "@theme/index";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { Ionicons } from "@expo/vector-icons";
-import { usePullToRefresh } from "@hooks/usePullToRefresh";
+} from '@components/index';
+import { palette, spacing } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { Ionicons } from '@expo/vector-icons';
+import { usePullToRefresh } from '@hooks/usePullToRefresh';
 
 type LecturerTile = {
   key: string;
@@ -26,12 +26,48 @@ type LecturerTile = {
 };
 
 const lecturerTiles: LecturerTile[] = [
-  { key: "classes", title: "My Classes", subtitle: "Start sessions and take attendance.", icon: "people", navigateTo: "LecturerClasses" },
-  { key: "assignments", title: "Assignments", subtitle: "Review submissions and send feedback.", icon: "reader", navigateTo: "LecturerAssignments" },
-  { key: "messages", title: "Messages", subtitle: "Respond to parents and students.", icon: "chatbubbles", navigateTo: "LecturerMessages" },
-  { key: "records", title: "Records", subtitle: "Update grades and attendance quickly.", icon: "create", navigateTo: "LecturerRecords" },
-  { key: "timetable", title: "Timetable", subtitle: "Plan sessions and toggle reminders.", icon: "calendar", navigateTo: "LecturerTimetable" },
-  { key: "rewards", title: "Rewards Hub", subtitle: "Celebrate teaching milestones.", icon: "gift", navigateTo: "Rewards" },
+  {
+    key: 'classes',
+    title: 'My Classes',
+    subtitle: 'Start sessions and take attendance.',
+    icon: 'people',
+    navigateTo: 'LecturerClasses',
+  },
+  {
+    key: 'assignments',
+    title: 'Assignments',
+    subtitle: 'Review submissions and send feedback.',
+    icon: 'reader',
+    navigateTo: 'LecturerAssignments',
+  },
+  {
+    key: 'messages',
+    title: 'Messages',
+    subtitle: 'Respond to parents and students.',
+    icon: 'chatbubbles',
+    navigateTo: 'LecturerMessages',
+  },
+  {
+    key: 'records',
+    title: 'Records',
+    subtitle: 'Update grades and attendance quickly.',
+    icon: 'create',
+    navigateTo: 'LecturerRecords',
+  },
+  {
+    key: 'timetable',
+    title: 'Timetable',
+    subtitle: 'Plan sessions and toggle reminders.',
+    icon: 'calendar',
+    navigateTo: 'LecturerTimetable',
+  },
+  {
+    key: 'rewards',
+    title: 'Rewards Hub',
+    subtitle: 'Celebrate teaching milestones.',
+    icon: 'gift',
+    navigateTo: 'Rewards',
+  },
 ];
 
 export const LecturerDashboardScreen: React.FC = () => {
@@ -43,14 +79,20 @@ export const LecturerDashboardScreen: React.FC = () => {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
       >
-        <GreetingHeader name="Mr. Kamau" rightAccessory={<NotificationBell />} />
+        <GreetingHeader name='Mr. Kamau' rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
-          onPress={() => navigation.navigate("Search")}
-          onVoicePress={() => navigation.navigate("Search")}
+          onPress={() => navigation.navigate('Search')}
+          onVoicePress={() => navigation.navigate('Search')}
         />
-        <AlertBanner message="Start ICT201 session in 10 minutes" variant="info" />
+        <AlertBanner message='Start ICT201 session in 10 minutes' variant='info' />
         <View style={styles.tiles}>
           {lecturerTiles.map((tile) => (
             <DashboardTile
@@ -63,13 +105,13 @@ export const LecturerDashboardScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-      <FloatingAssistantButton label="Assist" onPress={() => setShowAssistant(true)} />
+      <FloatingAssistantButton label='Assist' onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
-          { label: "Home", isActive: true },
-          { label: "Rewards", onPress: () => navigation.navigate("Rewards") },
-          { label: "Search", onPress: () => navigation.navigate("Search") },
-          { label: "Profile", onPress: () => navigation.navigate("Profile") },
+          { label: 'Home', isActive: true },
+          { label: 'Rewards', onPress: () => navigation.navigate('Rewards') },
+          { label: 'Search', onPress: () => navigation.navigate('Search') },
+          { label: 'Profile', onPress: () => navigation.navigate('Profile') },
         ]}
       />
       {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}

@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const requests = [
-  { employer: "Inclusive Tech Ltd", student: "Aisha", status: "Pending" },
-  { employer: "Ministry of Education", student: "Brian", status: "Completed" },
+  { employer: 'Inclusive Tech Ltd', student: 'Aisha', status: 'Pending' },
+  { employer: 'Ministry of Education', student: 'Brian', status: 'Completed' },
 ];
 
 export const RecordsVerificationsScreen: React.FC = () => (
@@ -15,11 +15,13 @@ export const RecordsVerificationsScreen: React.FC = () => (
     <Text style={styles.subtitle}>Respond to employer requests with one-tap confirmations.</Text>
     {requests.map((req) => (
       <View key={req.employer + req.student} style={styles.card}>
-        <Ionicons name="briefcase" size={28} color={palette.accent} />
+        <Ionicons name='briefcase' size={28} color={palette.accent} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{req.employer}</Text>
-          <Text style={styles.cardMeta}>{req.student} • {req.status}</Text>
-          <VoiceButton label="Review request" onPress={() => {}} />
+          <Text style={styles.cardMeta}>
+            {req.student} ï¿½ {req.status}
+          </Text>
+          <VoiceButton label='Review request' onPress={() => {}} />
         </View>
       </View>
     ))}
@@ -31,12 +33,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

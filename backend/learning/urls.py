@@ -1,6 +1,6 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
+from .core_views import (
     CourseViewSet,
     UnitViewSet,
     EnrollmentViewSet,
@@ -10,11 +10,23 @@ from .views import (
     AttendanceCheckInView,
     ExamRegistrationView,
 )
+from .views import (
+    AchievementCategoryViewSet,
+    AchievementViewSet,
+    StudentAchievementViewSet,
+    RewardClaimViewSet,
+    TermProgressViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"courses", CourseViewSet, basename="course")
 router.register(r"units", UnitViewSet, basename="unit")
 router.register(r"enrollments", EnrollmentViewSet, basename="enrollment")
+router.register(r'achievement-categories', AchievementCategoryViewSet, basename="achievement-category")
+router.register(r'achievements', AchievementViewSet, basename="achievement")
+router.register(r'student-achievements', StudentAchievementViewSet, basename="student-achievement")
+router.register(r'reward-claims', RewardClaimViewSet, basename="reward-claim")
+router.register(r'term-progress', TermProgressViewSet, basename="term-progress")
 
 urlpatterns = router.urls + [
     path("students/<int:student_id>/progress/", ProgressSummaryView.as_view(), name="progress-summary"),

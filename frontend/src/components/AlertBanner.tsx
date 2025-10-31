@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { palette, radius, spacing, typography } from "@theme/index";
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { palette, radius, spacing, typography } from '@theme/index';
 
-export type AlertVariant = "success" | "warning" | "danger" | "info";
+export type AlertVariant = 'success' | 'warning' | 'danger' | 'info';
 
 const variantColor: Record<AlertVariant, string> = {
   success: palette.success,
@@ -18,14 +18,11 @@ interface AlertBannerProps {
   speakOnMount?: () => void;
 }
 
-export const AlertBanner: React.FC<AlertBannerProps> = ({
-  message,
-  variant = "info",
-  icon,
-}) => {
+export const AlertBanner: React.FC<AlertBannerProps> = ({ message, variant = 'info', icon }) => {
   return (
-    <View style={[styles.container, { borderLeftColor: variantColor[variant] }]}
-      accessibilityRole="alert"
+    <View
+      style={[styles.container, { borderLeftColor: variantColor[variant] }]}
+      accessibilityRole='alert'
       accessibilityLabel={message}
     >
       {icon ? <View style={styles.icon}>{icon}</View> : null}
@@ -36,14 +33,14 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: palette.surface,
     borderLeftWidth: 6,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.md,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
@@ -51,7 +48,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     width: 32,
-    alignItems: "center",
+    alignItems: 'center',
   },
   text: {
     ...typography.body,

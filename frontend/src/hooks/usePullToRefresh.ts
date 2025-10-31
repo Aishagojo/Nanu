@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 export const usePullToRefresh = (action?: () => Promise<void> | void) => {
   const [refreshing, setRefreshing] = useState(false);

@@ -21,6 +21,13 @@ class User(AbstractUser):
     role = models.CharField(max_length=32, choices=Roles.choices, default=Roles.STUDENT)
     display_name = models.CharField(max_length=255, blank=True)
     must_change_password = models.BooleanField(default=False)
+    department = models.ForeignKey(
+        'core.Department',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='staff_members',
+    )
     # Accessibility preferences
     prefers_simple_language = models.BooleanField(default=True)
     prefers_high_contrast = models.BooleanField(default=False)

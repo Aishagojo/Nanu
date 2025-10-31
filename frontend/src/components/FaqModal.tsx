@@ -1,7 +1,7 @@
-import React from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import { palette, spacing, typography, radius } from "@theme/index";
-import { globalFaq } from "@data/faq";
+import React from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { palette, spacing, typography, radius } from '@theme/index';
+import { globalFaq } from '@data/faq';
 
 type FaqModalProps = {
   visible: boolean;
@@ -10,12 +10,16 @@ type FaqModalProps = {
 
 export const FaqModal: React.FC<FaqModalProps> = ({ visible, onClose }) => {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType='slide' onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>Need a quick answer?</Text>
-            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close FAQs">
+            <TouchableOpacity
+              onPress={onClose}
+              accessibilityRole='button'
+              accessibilityLabel='Close FAQs'
+            >
               <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -36,8 +40,8 @@ export const FaqModal: React.FC<FaqModalProps> = ({ visible, onClose }) => {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: palette.surface,
@@ -46,12 +50,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
-    maxHeight: "80%",
+    maxHeight: '80%',
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
   title: {

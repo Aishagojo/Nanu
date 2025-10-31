@@ -1,6 +1,6 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
-import { palette, radius, spacing, typography } from "@theme/index";
+import React from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { palette, radius, spacing, typography } from '@theme/index';
 
 interface GreetingHeaderProps {
   name: string;
@@ -29,8 +29,8 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
         <TouchableOpacity
           style={styles.avatarWrapper}
           onPress={onSpeak}
-          accessibilityRole="button"
-          accessibilityLabel="Read greeting aloud"
+          accessibilityRole='button'
+          accessibilityLabel='Read greeting aloud'
         >
           {avatarUri ? (
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -47,24 +47,28 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
 
 const deriveGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) {
+    return 'Good morning';
+  }
+  if (hour < 17) {
+    return 'Good afternoon';
+  }
+  return 'Good evening';
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
   info: {
     flex: 1,
   },
   actions: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
     marginLeft: spacing.md,
   },
@@ -84,22 +88,22 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    overflow: "hidden",
+    overflow: 'hidden',
     borderWidth: 3,
     borderColor: palette.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   placeholder: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
     backgroundColor: palette.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholderText: {
     ...typography.headingL,

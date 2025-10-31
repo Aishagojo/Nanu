@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as LocalAuthentication from "expo-local-authentication";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import {
   loginRequest,
   fetchJson,
@@ -10,8 +10,8 @@ import {
   disableTotp as disableTotpRequest,
   assignUserRole,
   type ApiUser,
-} from "@services/api";
-import type { Role } from "@app-types/roles";
+} from '@services/api';
+import type { Role } from '@app-types/roles';
 
 type UserProfile = {
   id: number;
@@ -37,7 +37,12 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   biometricsAvailable: boolean;
   hasPendingBiometric: boolean;
-  login: (params: { username: string; password: string; expectedRole: Role; totpCode?: string }) => Promise<{
+  login: (params: {
+    username: string;
+    password: string;
+    expectedRole: Role;
+    totpCode?: string;
+  }) => Promise<{
     success: boolean;
     error?: string;
     requiresPasswordChange?: boolean;
@@ -53,12 +58,16 @@ type AuthContextValue = {
   assignRole: (userId: number, role: Role) => Promise<ApiUser>;
 };
 
-const STORAGE_KEY = "eduassist.auth";
+const STORAGE_KEY = 'eduassist.auth';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AuthState>({ accessToken: null, refreshToken: null, user: null });
+  const [state, setState] = useState<AuthState>({
+    accessToken: null,
+    refreshToken: null,
+    user: null,
+  });
   const [loading, setLoading] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [biometricLocked, setBiometricLocked] = useState(false);
@@ -70,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const payload = await AsyncStorage.getItem(STORAGE_KEY);
         if (payload) {
           const parsed: AuthState = JSON.parse(payload);
-          if (parsed.user && typeof parsed.user.totp_enabled !== "boolean") {
+          if (parsed.user && typeof parsed.user.totp_enabled !== 'boolean') {
             parsed.user = { ...parsed.user, totp_enabled: false };
           }
           setState(parsed);
@@ -82,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (hasHardware && isEnrolled) {
                 setBiometricsAvailable(true);
                 const result = await LocalAuthentication.authenticateAsync({
-                  promptMessage: "Unlock EduAssist",
-                  fallbackLabel: "Use passcode",
+                  promptMessage: 'Unlock EduAssist',
+                  fallbackLabel: 'Use passcode',
                 });
                 if (result.success) {
                   setBiometricLocked(false);
@@ -95,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setBiometricsAvailable(false);
               }
             } catch (error) {
-              console.warn("Biometric unlock failed", error);
+              console.warn('Biometric unlock failed', error);
               setBiometricLocked(false);
             }
           } else {
@@ -104,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (error) {
-        console.warn("Failed to read auth state", error);
+        console.warn('Failed to read auth state', error);
       } finally {
         setBootstrapped(true);
       }
@@ -113,14 +122,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (!bootstrapped) return;
+    if (!bootstrapped) {
+      return;
+    }
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch((error) =>
-      console.warn("Failed to persist auth state", error)
+      console.warn('Failed to persist auth state', error),
     );
   }, [state, bootstrapped]);
 
   const refreshProfile = useCallback(async () => {
-    if (!state.accessToken) return;
+    if (!state.accessToken) {
+      return;
+    }
     try {
       const profile = await fetchJson<UserProfile>(endpoints.me(), state.accessToken);
       setState((prev) => ({
@@ -128,36 +141,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: profile,
       }));
     } catch (error) {
-      console.warn("Failed to refresh profile", error);
+      console.warn('Failed to refresh profile', error);
     }
   }, [state.accessToken]);
 
-  const login = useCallback<AuthContextValue["login"]>(async ({ username, password, expectedRole, totpCode }) => {
-    setLoading(true);
-    try {
-      const tokenResponse = await loginRequest({ username, password, totp_code: totpCode });
-      const profile = await fetchJson<UserProfile>(endpoints.me(), tokenResponse.access);
-      if (profile.role !== expectedRole) {
-        return { success: false, error: `This account is assigned to the ${profile.role} role.` };
-      }
-      setState({ accessToken: tokenResponse.access, refreshToken: tokenResponse.refresh, user: profile });
+  const login = useCallback<AuthContextValue['login']>(
+    async ({ username, password, expectedRole, totpCode }) => {
+      setLoading(true);
       try {
-        const hasHardware = await LocalAuthentication.hasHardwareAsync();
-        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-        setBiometricsAvailable(hasHardware && isEnrolled);
-      } catch (error) {
-        console.warn("Unable to determine biometric availability after login", error);
-        setBiometricsAvailable(false);
+        const tokenResponse = await loginRequest({ username, password, totp_code: totpCode });
+        const profile = await fetchJson<UserProfile>(endpoints.me(), tokenResponse.access);
+        if (profile.role !== expectedRole) {
+          return { success: false, error: `This account is assigned to the ${profile.role} role.` };
+        }
+        setState({
+          accessToken: tokenResponse.access,
+          refreshToken: tokenResponse.refresh,
+          user: profile,
+        });
+        try {
+          const hasHardware = await LocalAuthentication.hasHardwareAsync();
+          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+          setBiometricsAvailable(hasHardware && isEnrolled);
+        } catch (error) {
+          console.warn('Unable to determine biometric availability after login', error);
+          setBiometricsAvailable(false);
+        }
+        setBiometricLocked(false);
+        return { success: true, requiresPasswordChange: profile.must_change_password };
+      } catch (error: any) {
+        console.warn('Login error', error);
+        return { success: false, error: error?.message ?? 'Unable to sign in' };
+      } finally {
+        setLoading(false);
       }
-      setBiometricLocked(false);
-      return { success: true, requiresPasswordChange: profile.must_change_password };
-    } catch (error: any) {
-      console.warn("Login error", error);
-      return { success: false, error: error?.message ?? "Unable to sign in" };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     setState({ accessToken: null, refreshToken: null, user: null });
@@ -180,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getTotpSetup = useCallback(async () => {
     if (!state.accessToken) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
     const response = await requestTotpSetup(state.accessToken);
     return response;
@@ -189,35 +209,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const activateTotp = useCallback(
     async (code: string) => {
       if (!state.accessToken) {
-        throw new Error("Not authenticated");
+        throw new Error('Not authenticated');
       }
       await activateTotpRequest(state.accessToken, code);
       setState((prev) => {
-        if (!prev.user) return prev;
+        if (!prev.user) {
+          return prev;
+        }
         return {
           ...prev,
           user: { ...prev.user, totp_enabled: true },
         };
       });
     },
-    [state.accessToken]
+    [state.accessToken],
   );
 
   const disableTotp = useCallback(
     async (code: string) => {
       if (!state.accessToken) {
-        throw new Error("Not authenticated");
+        throw new Error('Not authenticated');
       }
       await disableTotpRequest(state.accessToken, code);
       setState((prev) => {
-        if (!prev.user) return prev;
+        if (!prev.user) {
+          return prev;
+        }
         return {
           ...prev,
           user: { ...prev.user, totp_enabled: false },
         };
       });
     },
-    [state.accessToken]
+    [state.accessToken],
   );
 
   const unlockWithBiometrics = useCallback(async () => {
@@ -227,8 +251,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Unlock EduAssist",
-        fallbackLabel: "Use passcode",
+        promptMessage: 'Unlock EduAssist',
+        fallbackLabel: 'Use passcode',
       });
       if (result.success) {
         setBiometricLocked(false);
@@ -236,17 +260,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return false;
     } catch (error) {
-      console.warn("Biometric authentication error", error);
+      console.warn('Biometric authentication error', error);
       return false;
     } finally {
       setLoading(false);
     }
   }, [state.accessToken, state.user]);
 
-  const assignRole = useCallback<AuthContextValue["assignRole"]>(
+  const assignRole = useCallback<AuthContextValue['assignRole']>(
     async (userId, role) => {
       if (!state.accessToken) {
-        throw new Error("Not authenticated");
+        throw new Error('Not authenticated');
       }
       const updated = await assignUserRole(state.accessToken, userId, role);
       if (state.user && updated.id === state.user.id) {
@@ -260,7 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return updated;
     },
-    [state.accessToken, state.user]
+    [state.accessToken, state.user],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -294,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activateTotp,
       disableTotp,
       assignRole,
-    ]
+    ],
   );
 
   if (!bootstrapped) {
@@ -307,7 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return ctx;
 };

@@ -1,9 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { GreetingHeader, VoiceButton, AlertBanner } from "@components/index";
-import { palette, spacing, typography } from "@theme/index";
-import { useAuth } from "@context/AuthContext";
-import type { Role } from "@app-types/roles";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { GreetingHeader, VoiceButton, AlertBanner } from '@components/index';
+import { palette, spacing, typography } from '@theme/index';
+import { useAuth } from '@context/AuthContext';
+import type { Role } from '@app-types/roles';
 import {
   createParentLink,
   createProvisionRequest,
@@ -18,9 +26,9 @@ import {
   type ApiUser,
   type ProvisionRequestPayload,
   type QuickEnrollPayload,
-} from "@services/api";
+} from '@services/api';
 
-type EnrollableRole = Extract<Role, "student" | "parent">;
+type EnrollableRole = Extract<Role, 'student' | 'parent'>;
 
 type EnrollFormState = {
   role: EnrollableRole;
@@ -36,16 +44,16 @@ type LinkFormState = {
 };
 
 const initialEnrollState: EnrollFormState = {
-  role: "student",
-  username: "",
-  display_name: "",
-  email: "",
+  role: 'student',
+  username: '',
+  display_name: '',
+  email: '',
 };
 
 const initialLinkState: LinkFormState = {
-  parentUsername: "",
-  studentUsername: "",
-  relationship: "",
+  parentUsername: '',
+  studentUsername: '',
+  relationship: '',
 };
 
 export const RecordsEnrollmentScreen: React.FC = () => {
@@ -53,7 +61,7 @@ export const RecordsEnrollmentScreen: React.FC = () => {
   const token = state.accessToken;
   const [enrollForm, setEnrollForm] = useState<EnrollFormState>(initialEnrollState);
   const [linkForm, setLinkForm] = useState<LinkFormState>(initialLinkState);
-  const [recordsPasscode, setRecordsPasscode] = useState("");
+  const [recordsPasscode, setRecordsPasscode] = useState('');
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [links, setLinks] = useState<ApiParentLink[]>([]);
   const [requests, setRequests] = useState<ApiProvisionRequest[]>([]);
@@ -63,60 +71,68 @@ export const RecordsEnrollmentScreen: React.FC = () => {
   const [loadingLists, setLoadingLists] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
-  const [rosterForm, setRosterForm] = useState({ studentUsername: "", courseCode: "" });
+  const [rosterForm, setRosterForm] = useState({ studentUsername: '', courseCode: '' });
   const [rostering, setRostering] = useState(false);
 
-  const parents = useMemo(() => users.filter((user) => user.role === "parent"), [users]);
-  const students = useMemo(() => users.filter((user) => user.role === "student"), [users]);
+  const parents = useMemo(() => users.filter((user) => user.role === 'parent'), [users]);
+  const students = useMemo(() => users.filter((user) => user.role === 'student'), [users]);
 
   const loadUsers = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     try {
       setLoadingLists(true);
       const data = await fetchUsers(token);
       setUsers(data);
     } catch (error: any) {
-      console.warn("Failed to fetch users", error);
-      Alert.alert("Unable to load users", error?.message ?? "Check your connection and try again.");
+      console.warn('Failed to fetch users', error);
+      Alert.alert('Unable to load users', error?.message ?? 'Check your connection and try again.');
     } finally {
       setLoadingLists(false);
     }
   }, [token]);
 
   const loadLinks = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     try {
       const data = await fetchParentLinks(token);
       setLinks(data);
     } catch (error: any) {
-      console.warn("Failed to fetch parent links", error);
-      Alert.alert("Unable to load parent links", error?.message ?? "Please try again.");
+      console.warn('Failed to fetch parent links', error);
+      Alert.alert('Unable to load parent links', error?.message ?? 'Please try again.');
     }
   }, [token]);
 
   const loadRequests = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     try {
       setLoadingRequests(true);
       const data = await fetchProvisionRequests(token);
       setRequests(data);
     } catch (error: any) {
-      console.warn("Failed to fetch provision requests", error);
-      Alert.alert("Unable to load requests", error?.message ?? "Please try again.");
+      console.warn('Failed to fetch provision requests', error);
+      Alert.alert('Unable to load requests', error?.message ?? 'Please try again.');
     } finally {
       setLoadingRequests(false);
     }
   }, [token]);
 
   const loadCourses = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     try {
       setLoadingCourses(true);
       const data = await fetchCourses(token);
       setCourses(data);
     } catch (error: any) {
-      console.warn("Failed to fetch courses", error);
-      Alert.alert("Unable to load courses", error?.message ?? "Please refresh.");
+      console.warn('Failed to fetch courses', error);
+      Alert.alert('Unable to load courses', error?.message ?? 'Please refresh.');
     } finally {
       setLoadingCourses(false);
     }
@@ -136,16 +152,16 @@ export const RecordsEnrollmentScreen: React.FC = () => {
 
   const handleCreateRequest = async () => {
     if (!token) {
-      Alert.alert("Not authenticated", "Please login again.");
+      Alert.alert('Not authenticated', 'Please login again.');
       return;
     }
     const passcode = recordsPasscode.trim();
     if (!passcode) {
-      Alert.alert("Approval needed", "Enter the records approval passcode before submitting.");
+      Alert.alert('Approval needed', 'Enter the records approval passcode before submitting.');
       return;
     }
     if (!enrollForm.username.trim()) {
-      Alert.alert("Missing info", "Username is required.");
+      Alert.alert('Missing info', 'Username is required.');
       return;
     }
     try {
@@ -153,24 +169,20 @@ export const RecordsEnrollmentScreen: React.FC = () => {
       const payload: ProvisionRequestPayload = {
         username: enrollForm.username.trim().toLowerCase(),
         role: enrollForm.role,
+        records_passcode: passcode,
+        ...(enrollForm.display_name.trim() ? { display_name: enrollForm.display_name.trim() } : {}),
+        ...(enrollForm.email.trim() ? { email: enrollForm.email.trim() } : {}),
       };
-      if (enrollForm.display_name.trim()) {
-        payload.display_name = enrollForm.display_name.trim();
-      }
-      if (enrollForm.email.trim()) {
-        payload.email = enrollForm.email.trim();
-      }
-      payload.records_passcode = passcode;
       await createProvisionRequest(token, payload);
       Alert.alert(
-        "Request submitted",
-        "An administrator will review this request and share the temporary password once approved."
+        'Request submitted',
+        'An administrator will review this request and share the temporary password once approved.',
       );
       setEnrollForm((prev) => ({ ...initialEnrollState, role: prev.role }));
       await loadRequests();
     } catch (error: any) {
-      console.warn("Failed to submit provision request", error);
-      Alert.alert("Request failed", error?.message ?? "Unable to send the request.");
+      console.warn('Failed to submit provision request', error);
+      Alert.alert('Request failed', error?.message ?? 'Unable to send the request.');
     } finally {
       setCreatingRequest(false);
     }
@@ -178,18 +190,22 @@ export const RecordsEnrollmentScreen: React.FC = () => {
 
   const handleCreateLink = async () => {
     if (!token) {
-      Alert.alert("Not authenticated", "Please login again.");
+      Alert.alert('Not authenticated', 'Please login again.');
       return;
     }
     const passcode = recordsPasscode.trim();
     if (!passcode) {
-      Alert.alert("Approval needed", "Enter the records approval passcode before linking.");
+      Alert.alert('Approval needed', 'Enter the records approval passcode before linking.');
       return;
     }
-    const parent = parents.find((user) => user.username.toLowerCase() === linkForm.parentUsername.trim().toLowerCase());
-    const student = students.find((user) => user.username.toLowerCase() === linkForm.studentUsername.trim().toLowerCase());
+    const parent = parents.find(
+      (user) => user.username.toLowerCase() === linkForm.parentUsername.trim().toLowerCase(),
+    );
+    const student = students.find(
+      (user) => user.username.toLowerCase() === linkForm.studentUsername.trim().toLowerCase(),
+    );
     if (!parent || !student) {
-      Alert.alert("Invalid usernames", "Double-check the parent and student usernames.");
+      Alert.alert('Invalid usernames', 'Double-check the parent and student usernames.');
       return;
     }
     try {
@@ -200,12 +216,17 @@ export const RecordsEnrollmentScreen: React.FC = () => {
         relationship: linkForm.relationship.trim() || undefined,
         records_passcode: passcode,
       });
-      Alert.alert("Linked", `${parent.display_name || parent.username} is now linked to ${student.display_name || student.username}.`);
+      Alert.alert(
+        'Linked',
+        `${parent.display_name || parent.username} is now linked to ${
+          student.display_name || student.username
+        }.`,
+      );
       setLinkForm(initialLinkState);
       await loadLinks();
     } catch (error: any) {
-      console.warn("Failed to create parent link", error);
-      Alert.alert("Link failed", error?.message ?? "Unable to create the parent/student link.");
+      console.warn('Failed to create parent link', error);
+      Alert.alert('Link failed', error?.message ?? 'Unable to create the parent/student link.');
     } finally {
       setLinking(false);
     }
@@ -216,13 +237,13 @@ export const RecordsEnrollmentScreen: React.FC = () => {
 
   const handleRosterEnroll = async () => {
     if (!token) {
-      Alert.alert("Not authenticated", "Please login again.");
+      Alert.alert('Not authenticated', 'Please login again.');
       return;
     }
     const studentUsername = rosterForm.studentUsername.trim().toLowerCase();
     const courseCode = rosterForm.courseCode.trim().toUpperCase();
     if (!studentUsername || !courseCode) {
-      Alert.alert("Missing info", "Student username and course code are required.");
+      Alert.alert('Missing info', 'Student username and course code are required.');
       return;
     }
     try {
@@ -232,11 +253,11 @@ export const RecordsEnrollmentScreen: React.FC = () => {
         course_code: courseCode,
       };
       await quickEnrollStudent(token, payload);
-      Alert.alert("Enrolled", "Student has been added to the course.");
-      setRosterForm({ studentUsername: "", courseCode: "" });
+      Alert.alert('Enrolled', 'Student has been added to the course.');
+      setRosterForm({ studentUsername: '', courseCode: '' });
     } catch (error: any) {
-      console.warn("Quick enrollment failed", error);
-      Alert.alert("Enrollment failed", error?.message ?? "Unable to enroll the student.");
+      console.warn('Quick enrollment failed', error);
+      Alert.alert('Enrollment failed', error?.message ?? 'Unable to enroll the student.');
     } finally {
       setRostering(false);
     }
@@ -244,64 +265,72 @@ export const RecordsEnrollmentScreen: React.FC = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <GreetingHeader name="Student Onboarding" />
-      <AlertBanner message="Provision parent & student accounts, then link them for portal access." variant="info" />
+      <GreetingHeader name='Student Onboarding' />
+      <AlertBanner
+        message='Provision parent & student accounts, then link them for portal access.'
+        variant='info'
+      />
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Records approval passcode</Text>
-        <Text style={styles.cardSubtitle}>Required before you submit requests or link families.</Text>
+        <Text style={styles.cardSubtitle}>
+          Required before you submit requests or link families.
+        </Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter passcode"
+          placeholder='Enter passcode'
           value={recordsPasscode}
           onChangeText={setRecordsPasscode}
-          autoCapitalize="none"
+          autoCapitalize='none'
           secureTextEntry
         />
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Create account</Text>
-        <Text style={styles.cardSubtitle}>Start with a student, then add their parent/guardian.</Text>
+        <Text style={styles.cardSubtitle}>
+          Start with a student, then add their parent/guardian.
+        </Text>
         <View style={styles.roleRow}>
           <VoiceButton
-            label="Student"
-            onPress={() => setEnrollForm((prev) => ({ ...prev, role: "student" }))}
-            isActive={enrollForm.role === "student"}
+            label='Student'
+            onPress={() => setEnrollForm((prev) => ({ ...prev, role: 'student' }))}
+            isActive={enrollForm.role === 'student'}
           />
           <VoiceButton
-            label="Parent"
-            onPress={() => setEnrollForm((prev) => ({ ...prev, role: "parent" }))}
-            isActive={enrollForm.role === "parent"}
+            label='Parent'
+            onPress={() => setEnrollForm((prev) => ({ ...prev, role: 'parent' }))}
+            isActive={enrollForm.role === 'parent'}
           />
         </View>
         <TextInput
           style={styles.input}
-          placeholder="Username"
+          placeholder='Username'
           value={enrollForm.username}
-          autoCapitalize="none"
+          autoCapitalize='none'
           onChangeText={(text) => setEnrollForm((prev) => ({ ...prev, username: text }))}
         />
         <TextInput
           style={styles.input}
-          placeholder="Display name (optional)"
+          placeholder='Display name (optional)'
           value={enrollForm.display_name}
           onChangeText={(text) => setEnrollForm((prev) => ({ ...prev, display_name: text }))}
         />
         <TextInput
           style={styles.input}
-          placeholder="Email (optional)"
+          placeholder='Email (optional)'
           value={enrollForm.email}
-          autoCapitalize="none"
-          keyboardType="email-address"
+          autoCapitalize='none'
+          keyboardType='email-address'
           onChangeText={(text) => setEnrollForm((prev) => ({ ...prev, email: text }))}
         />
         <VoiceButton
-          label={creatingRequest ? "Submitting..." : "Submit for approval"}
+          label={creatingRequest ? 'Submitting...' : 'Submit for approval'}
           onPress={creatingRequest ? undefined : handleCreateRequest}
-          accessibilityHint="Send the provisioning request for approval"
+          accessibilityHint='Send the provisioning request for approval'
         />
         <Text style={styles.metaText}>
-          Tip: Once the request is approved, you will receive the temporary password to share with the family.
+          Tip: Once the request is approved, you will receive the temporary password to share with
+          the family.
         </Text>
       </View>
 
@@ -317,45 +346,55 @@ export const RecordsEnrollmentScreen: React.FC = () => {
               </Text>
               <Text style={styles.linkSecondary}>
                 Status: {request.status}
-                {request.created_user_detail ? `  ${request.created_user_detail.display_name || request.created_user_detail.username}` : ""}
+                {request.created_user_detail
+                  ? `  ${
+                      request.created_user_detail.display_name ||
+                      request.created_user_detail.username
+                    }`
+                  : ''}
               </Text>
             </View>
           ))
         ) : (
           <Text style={styles.metaText}>Requests will appear here once submitted.</Text>
         )}
-        <VoiceButton label="Refresh requests" onPress={loadRequests} />
+        <VoiceButton label='Refresh requests' onPress={loadRequests} />
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Link parent to student</Text>
-        <Text style={styles.cardSubtitle}>Use usernames exactly as created above. Approval passcode is required.</Text>
+        <Text style={styles.cardSubtitle}>
+          Use usernames exactly as created above. Approval passcode is required.
+        </Text>
         <TextInput
           style={styles.input}
-          placeholder="Parent username"
+          placeholder='Parent username'
           value={linkForm.parentUsername}
-          autoCapitalize="none"
+          autoCapitalize='none'
           onChangeText={(text) => setLinkForm((prev) => ({ ...prev, parentUsername: text }))}
         />
         <TextInput
           style={styles.input}
-          placeholder="Student username"
+          placeholder='Student username'
           value={linkForm.studentUsername}
-          autoCapitalize="none"
+          autoCapitalize='none'
           onChangeText={(text) => setLinkForm((prev) => ({ ...prev, studentUsername: text }))}
         />
         <TextInput
           style={styles.input}
-          placeholder="Relationship (optional)"
+          placeholder='Relationship (optional)'
           value={linkForm.relationship}
           onChangeText={(text) => setLinkForm((prev) => ({ ...prev, relationship: text }))}
         />
         <VoiceButton
-          label={linking ? "Linking..." : "Link accounts"}
+          label={linking ? 'Linking...' : 'Link accounts'}
           onPress={linking ? undefined : handleCreateLink}
-          accessibilityHint="Create a parent-student relationship"
+          accessibilityHint='Create a parent-student relationship'
         />
-        <VoiceButton label={loadingLists ? "Refreshing..." : "Refresh lists"} onPress={refreshUserLists} />
+        <VoiceButton
+          label={loadingLists ? 'Refreshing...' : 'Refresh lists'}
+          onPress={refreshUserLists}
+        />
       </View>
 
       <View style={styles.card}>
@@ -368,7 +407,7 @@ export const RecordsEnrollmentScreen: React.FC = () => {
               </Text>
               <Text style={styles.linkSecondary}>
                 Parent: {link.parent_detail.display_name || link.parent_detail.username}
-                {link.relationship ? ` (${link.relationship})` : ""}
+                {link.relationship ? ` (${link.relationship})` : ''}
               </Text>
             </View>
           ))
@@ -382,30 +421,33 @@ export const RecordsEnrollmentScreen: React.FC = () => {
         <Text style={styles.cardSubtitle}>Use approved student usernames and course codes.</Text>
         <TextInput
           style={styles.input}
-          placeholder="Student username"
+          placeholder='Student username'
           value={rosterForm.studentUsername}
-          autoCapitalize="none"
+          autoCapitalize='none'
           onChangeText={(text) => setRosterForm((prev) => ({ ...prev, studentUsername: text }))}
         />
         <TextInput
           style={styles.input}
-          placeholder="Course code (e.g., TTM101)"
+          placeholder='Course code (e.g., TTM101)'
           value={rosterForm.courseCode}
-          autoCapitalize="characters"
+          autoCapitalize='characters'
           onChangeText={(text) => setRosterForm((prev) => ({ ...prev, courseCode: text }))}
         />
         {loadingCourses ? (
           <Text style={styles.helperText}>Loading course list</Text>
         ) : (
           <Text style={styles.helperText}>
-            Available courses:{" "}
-            {courses.slice(0, 3).map((course) => course.code).join(", ") || "none loaded"}
+            Available courses:{' '}
+            {courses
+              .slice(0, 3)
+              .map((course) => course.code)
+              .join(', ') || 'none loaded'}
           </Text>
         )}
         <VoiceButton
-          label={rostering ? "Assigning..." : "Assign course"}
+          label={rostering ? 'Assigning...' : 'Assign course'}
           onPress={rostering ? undefined : handleRosterEnroll}
-          accessibilityHint="Enroll the student into the selected course"
+          accessibilityHint='Enroll the student into the selected course'
         />
       </View>
     </ScrollView>
@@ -424,7 +466,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: spacing.lg,
     gap: spacing.md,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
@@ -439,9 +481,9 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   roleRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.sm,
-    flexWrap: "wrap",
+    flexWrap: 'wrap',
   },
   input: {
     borderWidth: 1,

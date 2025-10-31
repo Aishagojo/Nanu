@@ -1,24 +1,32 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const faqs = [
-  { question: "How do I submit homework?", answer: "Open the assignment, tap record or upload, then press send." },
-  { question: "How do I join an online lesson?", answer: "Go to My Timetable and tap Join lesson." },
+  {
+    question: 'How do I submit homework?',
+    answer: 'Open the assignment, tap record or upload, then press send.',
+  },
+  {
+    question: 'How do I join an online lesson?',
+    answer: 'Go to My Timetable and tap Join lesson.',
+  },
 ];
 
 export const StudentHelpScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
     <Text style={styles.title}>Help & Support</Text>
-    <Text style={styles.subtitle}>Ask a question or tap a topic below. Everything can be read aloud.</Text>
+    <Text style={styles.subtitle}>
+      Ask a question or tap a topic below. Everything can be read aloud.
+    </Text>
     <View style={styles.card}>
-      <Ionicons name="chatbubbles" size={32} color={palette.accent} />
+      <Ionicons name='chatbubbles' size={32} color={palette.accent} />
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>Talk to advisor</Text>
         <Text style={styles.cardDescription}>Start a live chat with your support teacher.</Text>
-        <VoiceButton label="Start chat" onPress={() => {}} />
+        <VoiceButton label='Start chat' onPress={() => {}} />
       </View>
     </View>
     <Text style={styles.subtitle}>Popular questions</Text>
@@ -28,7 +36,7 @@ export const StudentHelpScreen: React.FC = () => (
         <Text style={styles.faqAnswer}>{faq.answer}</Text>
       </View>
     ))}
-    <VoiceButton label="Speak to EduAssist" onPress={() => {}} accessibilityHint="Open assistant" />
+    <VoiceButton label='Speak to EduAssist' onPress={() => {}} accessibilityHint='Open assistant' />
   </ScrollView>
 );
 
@@ -47,12 +55,12 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

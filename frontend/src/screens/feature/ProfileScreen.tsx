@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, Alert, Linking } from "react-native";
-import { useAuth } from "@context/AuthContext";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TextInput, Alert, Linking } from 'react-native';
+import { useAuth } from '@context/AuthContext';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 export const ProfileScreen: React.FC = () => {
   const { state, logout, getTotpSetup, activateTotp, disableTotp } = useAuth();
   const user = state.user;
   const [totpSecret, setTotpSecret] = useState<string | null>(null);
-  const [totpCode, setTotpCode] = useState("");
-  const [busy, setBusy] = useState<"setup" | "activate" | "disable" | null>(null);
+  const [totpCode, setTotpCode] = useState('');
+  const [busy, setBusy] = useState<'setup' | 'activate' | 'disable' | null>(null);
 
   const handleFetchTotp = async () => {
     try {
-      setBusy("setup");
+      setBusy('setup');
       const data = await getTotpSetup();
       setTotpSecret(data.secret);
       if (data.otpauth_url) {
@@ -23,16 +23,16 @@ export const ProfileScreen: React.FC = () => {
             Linking.openURL(data.otpauth_url);
           }
         } catch (error) {
-          console.warn("Unable to open authenticator link", error);
+          console.warn('Unable to open authenticator link', error);
         }
       }
       Alert.alert(
-        "Authenticator setup",
-        "Scan the QR launched in your authenticator app. If it did not open, add this manual code:\n\n" +
-          data.secret
+        'Authenticator setup',
+        'Scan the QR launched in your authenticator app. If it did not open, add this manual code:\n\n' +
+          data.secret,
       );
     } catch (error: any) {
-      Alert.alert("Authenticator", error?.message ?? "Unable to generate setup code.");
+      Alert.alert('Authenticator', error?.message ?? 'Unable to generate setup code.');
     } finally {
       setBusy(null);
     }
@@ -40,16 +40,19 @@ export const ProfileScreen: React.FC = () => {
 
   const handleActivate = async () => {
     if (!totpCode) {
-      Alert.alert("Authenticator", "Enter the 6-digit code from your authenticator to enable security.");
+      Alert.alert(
+        'Authenticator',
+        'Enter the 6-digit code from your authenticator to enable security.',
+      );
       return;
     }
     try {
-      setBusy("activate");
+      setBusy('activate');
       await activateTotp(totpCode);
-      setTotpCode("");
-      Alert.alert("Authenticator", "Two-factor authentication is now enabled.");
+      setTotpCode('');
+      Alert.alert('Authenticator', 'Two-factor authentication is now enabled.');
     } catch (error: any) {
-      Alert.alert("Authenticator", error?.message ?? "Invalid authenticator code.");
+      Alert.alert('Authenticator', error?.message ?? 'Invalid authenticator code.');
     } finally {
       setBusy(null);
     }
@@ -57,17 +60,17 @@ export const ProfileScreen: React.FC = () => {
 
   const handleDisable = async () => {
     if (!totpCode) {
-      Alert.alert("Authenticator", "Enter your current authenticator code to disable security.");
+      Alert.alert('Authenticator', 'Enter your current authenticator code to disable security.');
       return;
     }
     try {
-      setBusy("disable");
+      setBusy('disable');
       await disableTotp(totpCode);
-      setTotpCode("");
+      setTotpCode('');
       setTotpSecret(null);
-      Alert.alert("Authenticator", "Two-factor authentication has been disabled.");
+      Alert.alert('Authenticator', 'Two-factor authentication has been disabled.');
     } catch (error: any) {
-      Alert.alert("Authenticator", error?.message ?? "Could not disable authenticator.");
+      Alert.alert('Authenticator', error?.message ?? 'Could not disable authenticator.');
     } finally {
       setBusy(null);
     }
@@ -83,16 +86,16 @@ export const ProfileScreen: React.FC = () => {
           <Text style={styles.label}>Role</Text>
           <Text style={styles.value}>{user.role.toUpperCase()}</Text>
           <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{user.email || "Not provided"}</Text>
+          <Text style={styles.value}>{user.email || 'Not provided'}</Text>
           <Text style={styles.label}>Authenticator</Text>
-          <Text style={styles.value}>{user.totp_enabled ? "Enabled" : "Disabled"}</Text>
+          <Text style={styles.value}>{user.totp_enabled ? 'Enabled' : 'Disabled'}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Authenticator code"
+            placeholder='Authenticator code'
             value={totpCode}
             onChangeText={setTotpCode}
-            keyboardType="number-pad"
-            accessibilityLabel="Authenticator code"
+            keyboardType='number-pad'
+            accessibilityLabel='Authenticator code'
           />
           {totpSecret ? (
             <View>
@@ -101,23 +104,27 @@ export const ProfileScreen: React.FC = () => {
             </View>
           ) : null}
           <VoiceButton
-            label={busy === "setup" ? "Generating..." : "Get setup QR"}
+            label={busy === 'setup' ? 'Generating...' : 'Get setup QR'}
             onPress={handleFetchTotp}
-            accessibilityHint="Generate or view your authenticator setup details"
+            accessibilityHint='Generate or view your authenticator setup details'
           />
           <VoiceButton
-            label={busy === "activate" ? "Verifying..." : "Enable authenticator"}
+            label={busy === 'activate' ? 'Verifying...' : 'Enable authenticator'}
             onPress={handleActivate}
-            accessibilityHint="Enable Google Authenticator protection"
+            accessibilityHint='Enable Google Authenticator protection'
           />
           <VoiceButton
-            label={busy === "disable" ? "Removing..." : "Disable authenticator"}
+            label={busy === 'disable' ? 'Removing...' : 'Disable authenticator'}
             onPress={handleDisable}
-            accessibilityHint="Disable Google Authenticator protection"
+            accessibilityHint='Disable Google Authenticator protection'
           />
         </View>
       ) : null}
-      <VoiceButton label="Switch role" onPress={logout} accessibilityHint="Signs out and returns to role selection" />
+      <VoiceButton
+        label='Switch role'
+        onPress={logout}
+        accessibilityHint='Signs out and returns to role selection'
+      />
     </View>
   );
 };
@@ -138,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: spacing.lg,
     gap: spacing.sm,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,

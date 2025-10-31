@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, Text, RefreshControl } from "react-native";
+import React, { useState } from 'react';
+import { ScrollView, View, StyleSheet, Text, RefreshControl } from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -8,18 +8,18 @@ import {
   AlertBanner,
   VoiceSearchBar,
   ChatWidget,
-} from "@components/index";
-import { palette, spacing, typography } from "@theme/index";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { Ionicons } from "@expo/vector-icons";
-import { usePullToRefresh } from "@hooks/usePullToRefresh";
+} from '@components/index';
+import { palette, spacing, typography } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { Ionicons } from '@expo/vector-icons';
+import { usePullToRefresh } from '@hooks/usePullToRefresh';
 
 const kpis = [
-  { label: "Total Due", value: "KES 2.4M", color: palette.danger },
-  { label: "Collected", value: "KES 1.8M", color: palette.success },
-  { label: "Overdue", value: "KES 600K", color: palette.warning },
+  { label: 'Total Due', value: 'KES 2.4M', color: palette.danger },
+  { label: 'Collected', value: 'KES 1.8M', color: palette.success },
+  { label: 'Overdue', value: 'KES 600K', color: palette.warning },
 ];
 
 type FinanceTile = {
@@ -31,11 +31,41 @@ type FinanceTile = {
 };
 
 const financeTiles: FinanceTile[] = [
-  { key: "overview", title: "Fees Overview", subtitle: "KPIs with spoken summaries.", icon: "analytics", navigateTo: "FinanceOverview" },
-  { key: "students", title: "Students", subtitle: "View ledgers and record payments.", icon: "person-circle", navigateTo: "FinanceStudents" },
-  { key: "invoices", title: "Invoices", subtitle: "Send receipts via WhatsApp/SMS.", icon: "paper-plane", navigateTo: "FinanceInvoices" },
-  { key: "alerts", title: "Alerts", subtitle: "Schedule reminders and bulk outreach.", icon: "notifications", navigateTo: "FinanceAlerts" },
-  { key: "settings", title: "Settings", subtitle: "Manage fee items, waivers, plans.", icon: "settings", navigateTo: "FinanceSettings" },
+  {
+    key: 'overview',
+    title: 'Fees Overview',
+    subtitle: 'KPIs with spoken summaries.',
+    icon: 'analytics',
+    navigateTo: 'FinanceOverview',
+  },
+  {
+    key: 'students',
+    title: 'Students',
+    subtitle: 'View ledgers and record payments.',
+    icon: 'person-circle',
+    navigateTo: 'FinanceStudents',
+  },
+  {
+    key: 'invoices',
+    title: 'Invoices',
+    subtitle: 'Send receipts via WhatsApp/SMS.',
+    icon: 'paper-plane',
+    navigateTo: 'FinanceInvoices',
+  },
+  {
+    key: 'alerts',
+    title: 'Alerts',
+    subtitle: 'Schedule reminders and bulk outreach.',
+    icon: 'notifications',
+    navigateTo: 'FinanceAlerts',
+  },
+  {
+    key: 'settings',
+    title: 'Settings',
+    subtitle: 'Manage fee items, waivers, plans.',
+    icon: 'settings',
+    navigateTo: 'FinanceSettings',
+  },
 ];
 
 export const FinanceDashboardScreen: React.FC = () => {
@@ -47,18 +77,28 @@ export const FinanceDashboardScreen: React.FC = () => {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
       >
-        <GreetingHeader name="Finance Team" />
+        <GreetingHeader name='Finance Team' />
         <VoiceSearchBar
-          onPress={() => navigation.navigate("Search")}
-          onVoicePress={() => navigation.navigate("Search")}
+          onPress={() => navigation.navigate('Search')}
+          onVoicePress={() => navigation.navigate('Search')}
         />
-        <AlertBanner message="45 overdue accounts" variant="warning" />
+        <AlertBanner message='45 overdue accounts' variant='warning' />
         <View style={styles.kpiRow}>
           {kpis.map((kpi) => (
-            <View key={kpi.label} style={[styles.kpiCard, { borderColor: kpi.color }]} accessibilityLabel={`${kpi.label} ${kpi.value}`}>
-              <Ionicons name="speedometer" size={24} color={kpi.color} />
+            <View
+              key={kpi.label}
+              style={[styles.kpiCard, { borderColor: kpi.color }]}
+              accessibilityLabel={`${kpi.label} ${kpi.value}`}
+            >
+              <Ionicons name='speedometer' size={24} color={kpi.color} />
               <Text style={styles.kpiLabel}>{kpi.label}</Text>
               <Text style={styles.kpiValue}>{kpi.value}</Text>
             </View>
@@ -77,9 +117,9 @@ export const FinanceDashboardScreen: React.FC = () => {
       <FloatingAssistantButton onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
-          { label: "Home", isActive: true },
-          { label: "Search", onPress: () => navigation.navigate("Search") },
-          { label: "Profile", onPress: () => navigation.navigate("Profile") },
+          { label: 'Home', isActive: true },
+          { label: 'Search', onPress: () => navigation.navigate('Search') },
+          { label: 'Profile', onPress: () => navigation.navigate('Profile') },
         ]}
       />
       {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
@@ -90,7 +130,7 @@ export const FinanceDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
   scroll: { padding: spacing.lg, paddingBottom: 160, gap: spacing.lg },
-  kpiRow: { flexDirection: "row", gap: spacing.md },
+  kpiRow: { flexDirection: 'row', gap: spacing.md },
   kpiCard: {
     flex: 1,
     borderWidth: 2,

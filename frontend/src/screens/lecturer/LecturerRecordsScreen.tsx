@@ -1,13 +1,13 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const grades = [
-  { student: "Aisha", course: "ICT201", score: "85%", status: "Great progress" },
-  { student: "Brian", course: "ICT201", score: "68%", status: "Needs follow-up" },
-  { student: "Lina", course: "ICT305", score: "92%", status: "Ready for advanced work" },
+  { student: 'Aisha', course: 'ICT201', score: '85%', status: 'Great progress' },
+  { student: 'Brian', course: 'ICT201', score: '68%', status: 'Needs follow-up' },
+  { student: 'Lina', course: 'ICT305', score: '92%', status: 'Ready for advanced work' },
 ];
 
 export const LecturerRecordsScreen: React.FC = () => (
@@ -16,15 +16,19 @@ export const LecturerRecordsScreen: React.FC = () => (
     <Text style={styles.subtitle}>Enter marks with numeric steppers or import CSV templates.</Text>
     {grades.map((item) => (
       <View key={item.student + item.course} style={styles.card}>
-        <Ionicons name="create" size={28} color={palette.success} />
+        <Ionicons name='create' size={28} color={palette.success} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.student} • {item.course}</Text>
-          <Text style={styles.cardMeta}>{item.score} • {item.status}</Text>
-          <VoiceButton label="Update record" onPress={() => {}} />
+          <Text style={styles.cardTitle}>
+            {item.student} ï¿½ {item.course}
+          </Text>
+          <Text style={styles.cardMeta}>
+            {item.score} ï¿½ {item.status}
+          </Text>
+          <VoiceButton label='Update record' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label="Import spreadsheet" onPress={() => {}} />
+    <VoiceButton label='Import spreadsheet' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -43,12 +47,12 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

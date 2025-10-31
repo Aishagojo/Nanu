@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const reports = [
-  { title: "Semester Overview", description: "PDF summary of enrolment, pass rates, alerts." },
-  { title: "Attendance Trends", description: "CSV with weekly attendance per course." },
+  { title: 'Semester Overview', description: 'PDF summary of enrolment, pass rates, alerts.' },
+  { title: 'Attendance Trends', description: 'CSV with weekly attendance per course.' },
 ];
 
 export const HodReportsScreen: React.FC = () => (
@@ -15,11 +15,11 @@ export const HodReportsScreen: React.FC = () => (
     <Text style={styles.subtitle}>Generate PDF/CSV for leadership or board review.</Text>
     {reports.map((report) => (
       <View key={report.title} style={styles.card}>
-        <Ionicons name="document" size={28} color={palette.secondary} />
+        <Ionicons name='document' size={28} color={palette.secondary} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{report.title}</Text>
           <Text style={styles.cardMeta}>{report.description}</Text>
-          <VoiceButton label="Download" onPress={() => {}} />
+          <VoiceButton label='Download' onPress={() => {}} />
         </View>
       </View>
     ))}
@@ -31,12 +31,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

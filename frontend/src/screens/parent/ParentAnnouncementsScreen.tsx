@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const announcements = [
-  { title: "Sports Day", detail: "Friday 10 AM at the main field. Wear school colors." },
-  { title: "Parent Coffee", detail: "Join us Wednesday 8 AM for a support meetup." },
+  { title: 'Sports Day', detail: 'Friday 10 AM at the main field. Wear school colors.' },
+  { title: 'Parent Coffee', detail: 'Join us Wednesday 8 AM for a support meetup.' },
 ];
 
 export const ParentAnnouncementsScreen: React.FC = () => (
@@ -15,11 +15,11 @@ export const ParentAnnouncementsScreen: React.FC = () => (
     <Text style={styles.subtitle}>All notices are transcribed and can be played aloud.</Text>
     {announcements.map((item) => (
       <View key={item.title} style={styles.card}>
-        <Ionicons name="megaphone" size={28} color={palette.accent} />
+        <Ionicons name='megaphone' size={28} color={palette.accent} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.title}</Text>
           <Text style={styles.cardMeta}>{item.detail}</Text>
-          <VoiceButton label="Play announcement" onPress={() => {}} />
+          <VoiceButton label='Play announcement' onPress={() => {}} />
         </View>
       </View>
     ))}
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

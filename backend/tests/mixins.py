@@ -52,7 +52,7 @@ class ParentStudentFixtureMixin:
             code="DEM101",
             name="Demo Course",
             description="Course for testing",
-            owner=cls.teacher,
+            lecturer=cls.teacher,
         )
         cls.unit_one = Unit.objects.create(
             course=cls.course,

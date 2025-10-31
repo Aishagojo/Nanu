@@ -1,13 +1,13 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const classes = [
-  { time: "08:00", subject: "Mathematics", room: "B-204", action: "Join lesson" },
-  { time: "10:00", subject: "Science Lab", room: "Lab 1", action: "Start experiment" },
-  { time: "13:30", subject: "Art Therapy", room: "Studio", action: "View materials" },
+  { time: '08:00', subject: 'Mathematics', room: 'B-204', action: 'Join lesson' },
+  { time: '10:00', subject: 'Science Lab', room: 'Lab 1', action: 'Start experiment' },
+  { time: '13:30', subject: 'Art Therapy', room: 'Studio', action: 'View materials' },
 ];
 
 export const StudentTimetableScreen: React.FC = () => (
@@ -17,16 +17,22 @@ export const StudentTimetableScreen: React.FC = () => (
     {classes.map((item) => (
       <View key={item.subject} style={styles.card}>
         <View style={styles.iconWrapper}>
-          <Ionicons name="time" size={28} color={palette.primary} />
+          <Ionicons name='time' size={28} color={palette.primary} />
         </View>
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.subject}</Text>
-          <Text style={styles.cardMeta}>{item.time} • Room {item.room}</Text>
+          <Text style={styles.cardMeta}>
+            {item.time} ï¿½ Room {item.room}
+          </Text>
           <VoiceButton label={item.action} onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label="Speak entire timetable" onPress={() => {}} accessibilityHint="Read out schedule" />
+    <VoiceButton
+      label='Speak entire timetable'
+      onPress={() => {}}
+      accessibilityHint='Read out schedule'
+    />
   </ScrollView>
 );
 
@@ -45,11 +51,11 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
@@ -61,8 +67,8 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: palette.background,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardBody: {
     flex: 1,

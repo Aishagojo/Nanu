@@ -6,17 +6,12 @@ import React, {
   useMemo,
   useRef,
   useState,
-} from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from "./AuthContext";
-import {
-  fetchResources,
-  fetchThreads,
-  type ApiResource,
-  type ApiThread,
-} from "@services/api";
-import type { RootStackParamList } from "@navigation/AppNavigator";
-import type { Role } from "@app-types/roles";
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
+import { fetchResources, fetchThreads, type ApiResource, type ApiThread } from '@services/api';
+import type { RootStackParamList } from '@navigation/AppNavigator';
+import type { Role } from '@app-types/roles';
 
 export type AppRoute = {
   name: keyof RootStackParamList;
@@ -24,27 +19,27 @@ export type AppRoute = {
 };
 
 const THREAD_ROUTES: Partial<Record<Role, AppRoute>> = {
-  student: { name: "StudentCommunicate" },
-  parent: { name: "ParentMessages" },
-  lecturer: { name: "LecturerMessages" },
-  admin: { name: "AdminUsers" },
-  hod: { name: "HodCommunications" },
-  finance: { name: "FinanceAlerts" },
-  records: { name: "RecordsReports" },
+  student: { name: 'StudentCommunicate' },
+  parent: { name: 'ParentMessages' },
+  lecturer: { name: 'LecturerMessages' },
+  admin: { name: 'AdminUsers' },
+  hod: { name: 'HodCommunications' },
+  finance: { name: 'FinanceAlerts' },
+  records: { name: 'RecordsReports' },
 };
 
 const RESOURCE_ROUTES: Partial<Record<Role, AppRoute>> = {
-  student: { name: "StudentLibrary" },
-  parent: { name: "ParentAnnouncements" },
-  lecturer: { name: "LecturerRecords" },
-  admin: { name: "AdminSystems" },
+  student: { name: 'StudentLibrary' },
+  parent: { name: 'ParentAnnouncements' },
+  lecturer: { name: 'LecturerRecords' },
+  admin: { name: 'AdminSystems' },
 };
 
 export type AppNotification = {
   id: string;
   title: string;
   body: string;
-  type: "thread" | "resource";
+  type: 'thread' | 'resource';
   timestamp: string;
   read: boolean;
   route: AppRoute;
@@ -135,7 +130,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           setResourcesInitialized(false);
         }
       } catch (error) {
-        console.warn("Failed to load notification state", error);
+        console.warn('Failed to load notification state', error);
         setNotifications([]);
         setLastSeenThreads({});
         setSeenResourceIds([]);
@@ -147,7 +142,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [storageKey, user]);
 
   useEffect(() => {
-    if (!storageKey) return;
+    if (!storageKey) {
+      return;
+    }
     const stateToPersist: StoredState = {
       notifications,
       lastSeenThreads,
@@ -156,12 +153,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       resourcesInitialized,
     };
     AsyncStorage.setItem(storageKey, JSON.stringify(stateToPersist)).catch((error) =>
-      console.warn("Failed to persist notifications", error)
+      console.warn('Failed to persist notifications', error),
     );
-  }, [notifications, lastSeenThreads, seenResourceIds, threadsInitialized, resourcesInitialized, storageKey]);
+  }, [
+    notifications,
+    lastSeenThreads,
+    seenResourceIds,
+    threadsInitialized,
+    resourcesInitialized,
+    storageKey,
+  ]);
 
   const addNotifications = useCallback((entries: AppNotification[]) => {
-    if (!entries.length) return;
+    if (!entries.length) {
+      return;
+    }
     setNotifications((prev) => {
       const existingIds = new Set(prev.map((item) => item.id));
       const merged = [...entries.filter((item) => !existingIds.has(item.id)), ...prev];
@@ -172,7 +178,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const ingestThreads = useCallback(
     (threads: ApiThread[], route: AppRoute) => {
-      if (!user) return;
+      if (!user) {
+        return;
+      }
       const seenSnapshot = lastSeenThreadsRef.current;
       const hasInitialized = threadsInitializedRef.current;
       if (!hasInitialized && Object.keys(seenSnapshot).length === 0) {
@@ -195,7 +203,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       threads.forEach((thread) => {
         const lastMessage = thread.messages[thread.messages.length - 1];
-        if (!lastMessage) return;
+        if (!lastMessage) {
+          return;
+        }
         const timestamp = lastMessage.created_at;
         updates[thread.id] = timestamp;
         const lastSeen = seenSnapshot[thread.id];
@@ -208,12 +218,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           const bodyText =
             lastMessage.body?.trim() ||
             lastMessage.transcript?.trim() ||
-            "New voice note waiting for you.";
+            'New voice note waiting for you.';
           newNotifications.push({
             id: notificationId,
-            title: thread.subject || thread.teacher_detail?.display_name || "Conversation update",
+            title: thread.subject || thread.teacher_detail?.display_name || 'Conversation update',
             body: bodyText.length > 160 ? `${bodyText.slice(0, 157)}...` : bodyText,
-            type: "thread",
+            type: 'thread',
             timestamp,
             read: false,
             route,
@@ -230,12 +240,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         addNotifications(newNotifications);
       }
     },
-    [addNotifications, user]
+    [addNotifications, user],
   );
 
   const markThreadRead = useCallback((thread: ApiThread) => {
     const lastMessage = thread.messages[thread.messages.length - 1];
-    if (!lastMessage) return;
+    if (!lastMessage) {
+      return;
+    }
     const timestamp = lastMessage.created_at;
     setLastSeenThreads((prev) => {
       if (prev[thread.id] === timestamp) {
@@ -250,14 +262,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               ...item,
               read: true,
             }
-          : item
-      )
+          : item,
+      ),
     );
   }, []);
 
   const ingestResources = useCallback(
     (resources: ApiResource[], route: AppRoute) => {
-      if (!user) return;
+      if (!user) {
+        return;
+      }
       const knownIds = seenResourceIdsRef.current;
       const resourcesReady = resourcesInitializedRef.current;
       if (!resourcesReady && knownIds.length === 0 && resources.length) {
@@ -283,9 +297,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const timestamp = new Date().toISOString();
       const notificationsToAdd = fresh.map<AppNotification>((item) => ({
         id: `resource-${item.id}`,
-        title: "New library item",
+        title: 'New library item',
         body: `${item.title} (${item.kind}) is now available.`,
-        type: "resource",
+        type: 'resource',
         timestamp,
         read: false,
         route,
@@ -293,11 +307,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }));
       addNotifications(notificationsToAdd);
     },
-    [addNotifications, user]
+    [addNotifications, user],
   );
 
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user || !token) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -311,7 +327,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             ingestThreads(data, threadRoute);
           }
         } catch (error) {
-          console.warn("Notification thread preload failed", error);
+          console.warn('Notification thread preload failed', error);
         }
       }
       const resourceRoute = RESOURCE_ROUTES[role];
@@ -322,7 +338,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             ingestResources(resourcesLatest, resourceRoute);
           }
         } catch (error) {
-          console.warn("Notification resource preload failed", error);
+          console.warn('Notification resource preload failed', error);
         }
       }
     };
@@ -343,8 +359,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               ...item,
               read: true,
             }
-          : item
-      )
+          : item,
+      ),
     );
   }, []);
 
@@ -352,7 +368,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
   }, []);
 
-  const unreadCount = useMemo(() => notifications.filter((item) => !item.read).length, [notifications]);
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => !item.read).length,
+    [notifications],
+  );
 
   const value = useMemo<NotificationContextValue>(
     () => ({
@@ -364,7 +383,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       markNotificationRead,
       markAllRead,
     }),
-    [ingestResources, ingestThreads, markAllRead, markNotificationRead, markThreadRead, notifications, unreadCount]
+    [
+      ingestResources,
+      ingestThreads,
+      markAllRead,
+      markNotificationRead,
+      markThreadRead,
+      notifications,
+      unreadCount,
+    ],
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
@@ -373,7 +400,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 export const useNotifications = (): NotificationContextValue => {
   const ctx = useContext(NotificationContext);
   if (!ctx) {
-    throw new Error("useNotifications must be used within NotificationProvider");
+    throw new Error('useNotifications must be used within NotificationProvider');
   }
   return ctx;
 };

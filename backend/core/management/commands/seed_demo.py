@@ -138,12 +138,12 @@ class Command(BaseCommand):
             defaults={
                 "name": "Fundamentals of Tourism",
                 "description": "Introduction to tourism systems, ethics, and industry roles.",
-                "owner": lecturer,
+                "lecturer": lecturer,
             },
         )
-        if lecturer and course.owner_id != lecturer.id:
-            course.owner = lecturer
-            course.save(update_fields=["owner"])
+        if lecturer and course.lecturer_id != lecturer.id:
+            course.lecturer = lecturer
+            course.save(update_fields=["lecturer"])
 
         Unit.objects.update_or_create(
             course=course,

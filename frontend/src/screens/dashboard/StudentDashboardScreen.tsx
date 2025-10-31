@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
+import React, { useState } from 'react';
+import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -10,13 +10,13 @@ import {
   NotificationBell,
   VoiceSearchBar,
   ChatWidget,
-} from "@components/index";
-import { palette, spacing } from "@theme/index";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { Ionicons } from "@expo/vector-icons";
-import { usePullToRefresh } from "@hooks/usePullToRefresh";
+} from '@components/index';
+import { palette, spacing } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { Ionicons } from '@expo/vector-icons';
+import { usePullToRefresh } from '@hooks/usePullToRefresh';
 
 type StudentTile = {
   key: string;
@@ -28,46 +28,46 @@ type StudentTile = {
 
 const studentTiles: StudentTile[] = [
   {
-    key: "timetable",
-    title: "My Timetable",
+    key: 'timetable',
+    title: 'My Timetable',
     subtitle: "See today's classes and reminders.",
-    icon: "calendar",
-    navigateTo: "StudentTimetable",
+    icon: 'calendar',
+    navigateTo: 'StudentTimetable',
   },
   {
-    key: "assignments",
-    title: "Assignments",
-    subtitle: "Check due work and submit easily.",
-    icon: "clipboard",
-    navigateTo: "StudentAssignments",
+    key: 'assignments',
+    title: 'Assignments',
+    subtitle: 'Check due work and submit easily.',
+    icon: 'clipboard',
+    navigateTo: 'StudentAssignments',
   },
   {
-    key: "communicate",
-    title: "Communicate",
-    subtitle: "Call, voice note, or message teachers.",
-    icon: "call",
-    navigateTo: "StudentCommunicate",
+    key: 'communicate',
+    title: 'Communicate',
+    subtitle: 'Call, voice note, or message teachers.',
+    icon: 'call',
+    navigateTo: 'StudentCommunicate',
   },
   {
-    key: "help",
-    title: "Help",
-    subtitle: "Ask EduAssist or contact an advisor.",
-    icon: "help-buoy",
-    navigateTo: "StudentHelp",
+    key: 'help',
+    title: 'Help',
+    subtitle: 'Ask EduAssist or contact an advisor.',
+    icon: 'help-buoy',
+    navigateTo: 'StudentHelp',
   },
   {
-    key: "library",
-    title: "Library",
-    subtitle: "Open picture-heavy resources.",
-    icon: "book",
-    navigateTo: "StudentLibrary",
+    key: 'library',
+    title: 'Library',
+    subtitle: 'Open picture-heavy resources.',
+    icon: 'book',
+    navigateTo: 'StudentLibrary',
   },
   {
-    key: "rewards",
-    title: "Rewards Hub",
-    subtitle: "Claim merch & fee credits.",
-    icon: "gift",
-    navigateTo: "Rewards",
+    key: 'rewards',
+    title: 'Rewards Hub',
+    subtitle: 'Claim merch & fee credits.',
+    icon: 'gift',
+    navigateTo: 'Rewards',
   },
 ];
 
@@ -80,14 +80,20 @@ export const StudentDashboardScreen: React.FC = () => {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
       >
-        <GreetingHeader name="Aisha" rightAccessory={<NotificationBell />} />
+        <GreetingHeader name='Aisha' rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
-          onPress={() => navigation.navigate("Search")}
-          onVoicePress={() => navigation.navigate("Search")}
+          onPress={() => navigation.navigate('Search')}
+          onVoicePress={() => navigation.navigate('Search')}
         />
-        <AlertBanner message="Math class starts in 15 minutes" variant="warning" />
+        <AlertBanner message='Math class starts in 15 minutes' variant='warning' />
         <View style={styles.tiles}>
           {studentTiles.map((tile) => (
             <DashboardTile
@@ -102,17 +108,17 @@ export const StudentDashboardScreen: React.FC = () => {
         </View>
       </ScrollView>
       <VoiceButton
-        label="Speak timetable"
-        onPress={() => navigation.navigate("StudentTimetable")}
+        label='Speak timetable'
+        onPress={() => navigation.navigate('StudentTimetable')}
         accessibilityHint="Reads today's classes"
       />
-      <FloatingAssistantButton label="Chat" onPress={() => setShowAssistant(true)} />
+      <FloatingAssistantButton label='Chat' onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
-          { label: "Home", isActive: true },
-          { label: "Rewards", onPress: () => navigation.navigate("Rewards") },
-          { label: "Search", onPress: () => navigation.navigate("Search") },
-          { label: "Profile", onPress: () => navigation.navigate("Profile") },
+          { label: 'Home', isActive: true },
+          { label: 'Rewards', onPress: () => navigation.navigate('Rewards') },
+          { label: 'Search', onPress: () => navigation.navigate('Search') },
+          { label: 'Profile', onPress: () => navigation.navigate('Profile') },
         ]}
       />
       {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}

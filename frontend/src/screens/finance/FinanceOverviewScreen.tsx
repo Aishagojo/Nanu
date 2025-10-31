@@ -1,13 +1,13 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const kpis = [
-  { label: "Total Due", value: "KES 2.4M", icon: "alert-circle", color: palette.danger },
-  { label: "Collected", value: "KES 1.8M", icon: "cash", color: palette.success },
-  { label: "Overdue", value: "KES 600K", icon: "time", color: palette.warning },
+  { label: 'Total Due', value: 'KES 2.4M', icon: 'alert-circle', color: palette.danger },
+  { label: 'Collected', value: 'KES 1.8M', icon: 'cash', color: palette.success },
+  { label: 'Overdue', value: 'KES 600K', icon: 'time', color: palette.warning },
 ];
 
 export const FinanceOverviewScreen: React.FC = () => (
@@ -23,7 +23,7 @@ export const FinanceOverviewScreen: React.FC = () => (
         </View>
       ))}
     </View>
-    <VoiceButton label="Speak overview" onPress={() => {}} />
+    <VoiceButton label='Speak overview' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   kpiRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
   },
   kpiCard: {
@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: spacing.lg,
     gap: spacing.sm,
-    alignItems: "flex-start",
-    shadowColor: "#000",
+    alignItems: 'flex-start',
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

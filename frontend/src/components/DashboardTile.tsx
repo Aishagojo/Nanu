@@ -1,6 +1,6 @@
-import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet, ViewStyle } from "react-native";
-import { palette, spacing, radius, typography } from "@theme/index";
+import React from 'react';
+import { TouchableOpacity, View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { palette, spacing, radius, typography } from '@theme/index';
 
 interface DashboardTileProps {
   title: string;
@@ -25,7 +25,7 @@ export const DashboardTile: React.FC<DashboardTileProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      accessibilityRole="button"
+      accessibilityRole='button'
       accessibilityLabel={title}
       onPress={onPress}
       onLongPress={onLongPressSpeak}
@@ -49,31 +49,31 @@ export const DashboardTile: React.FC<DashboardTileProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: '100%',
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 3,
     borderWidth: 2,
-    borderColor: "transparent",
+    borderColor: 'transparent',
   },
   disabled: {
     opacity: 0.5,
-    borderStyle: "dashed",
+    borderStyle: 'dashed',
   },
   iconWrapper: {
     width: 64,
     height: 64,
     borderRadius: radius.md,
     backgroundColor: palette.background,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.lg,
   },
   textWrapper: {

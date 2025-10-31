@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const groups = [
-  { name: "All Lecturers", members: 12 },
-  { name: "Parents - ICT201", members: 24 },
+  { name: 'All Lecturers', members: 12 },
+  { name: 'Parents - ICT201', members: 24 },
 ];
 
 export const HodCommunicationsScreen: React.FC = () => (
@@ -15,11 +15,11 @@ export const HodCommunicationsScreen: React.FC = () => (
     <Text style={styles.subtitle}>Send announcements to lecturers or parent cohorts.</Text>
     {groups.map((group) => (
       <View key={group.name} style={styles.card}>
-        <Ionicons name="mail" size={28} color={palette.primary} />
+        <Ionicons name='mail' size={28} color={palette.primary} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{group.name}</Text>
           <Text style={styles.cardMeta}>{group.members} recipients</Text>
-          <VoiceButton label="Compose message" onPress={() => {}} />
+          <VoiceButton label='Compose message' onPress={() => {}} />
         </View>
       </View>
     ))}
@@ -31,12 +31,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

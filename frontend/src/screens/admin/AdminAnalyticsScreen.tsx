@@ -1,13 +1,13 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const analytics = [
-  { label: "Weekly logins", value: "312", icon: "log-in" },
-  { label: "Chatbot questions", value: "128", icon: "chatbubble" },
-  { label: "Alerts sent", value: "54", icon: "notifications" },
+  { label: 'Weekly logins', value: '312', icon: 'log-in' },
+  { label: 'Chatbot questions', value: '128', icon: 'chatbubble' },
+  { label: 'Alerts sent', value: '54', icon: 'notifications' },
 ];
 
 export const AdminAnalyticsScreen: React.FC = () => (
@@ -23,7 +23,7 @@ export const AdminAnalyticsScreen: React.FC = () => (
         </View>
       </View>
     ))}
-    <VoiceButton label="Export analytics" onPress={() => {}} />
+    <VoiceButton label='Export analytics' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -32,12 +32,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

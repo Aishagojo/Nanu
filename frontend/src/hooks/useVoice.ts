@@ -1,11 +1,13 @@
-import { useCallback, useState } from "react";
-import * as Speech from "expo-speech";
+import { useCallback, useState } from 'react';
+import * as Speech from 'expo-speech';
 
 export const useVoice = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const speak = useCallback((message: string) => {
-    if (!message) return;
+    if (!message) {
+      return;
+    }
     Speech.stop();
     setIsSpeaking(true);
     Speech.speak(message, {

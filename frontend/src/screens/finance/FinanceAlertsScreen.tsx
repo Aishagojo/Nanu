@@ -1,12 +1,12 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const alerts = [
-  { title: "Bulk reminder", detail: "Send SMS to overdue accounts", icon: "notifications" },
-  { title: "Payment plan", detail: "Follow up with Brian's parent", icon: "call" },
+  { title: 'Bulk reminder', detail: 'Send SMS to overdue accounts', icon: 'notifications' },
+  { title: 'Payment plan', detail: "Follow up with Brian's parent", icon: 'call' },
 ];
 
 export const FinanceAlertsScreen: React.FC = () => (
@@ -19,7 +19,7 @@ export const FinanceAlertsScreen: React.FC = () => (
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{alert.title}</Text>
           <Text style={styles.cardMeta}>{alert.detail}</Text>
-          <VoiceButton label="Schedule" onPress={() => {}} />
+          <VoiceButton label='Schedule' onPress={() => {}} />
         </View>
       </View>
     ))}
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

@@ -1,6 +1,6 @@
-import React from "react";
-import { TouchableOpacity, StyleSheet, Text } from "react-native";
-import { palette, radius, spacing, typography } from "@theme/index";
+import React from 'react';
+import { TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { palette, radius, spacing, typography } from '@theme/index';
 
 interface VoiceButtonProps {
   label: string;
@@ -26,7 +26,7 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      accessibilityRole="button"
+      accessibilityRole='button'
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       activeOpacity={0.75}
@@ -40,9 +40,9 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: palette.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

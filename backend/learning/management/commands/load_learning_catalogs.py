@@ -97,7 +97,7 @@ class Command(BaseCommand):
                     defaults={
                         "name": title,
                         "description": description,
-                        "owner": None,
+                        "lecturer": None,
                     },
                 )
                 if not created:

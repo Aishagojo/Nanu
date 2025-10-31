@@ -1,29 +1,33 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const metrics = [
-  { course: "ICT201", average: 78, passRate: "92%", icon: "trending-up" },
-  { course: "ICT305", average: 84, passRate: "95%", icon: "ribbon" },
+  { course: 'ICT201', average: 78, passRate: '92%', icon: 'trending-up' },
+  { course: 'ICT305', average: 84, passRate: '95%', icon: 'ribbon' },
 ];
 
 export const HodPerformanceScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
     <Text style={styles.title}>Performance Heatmap</Text>
-    <Text style={styles.subtitle}>Identify courses needing support and export summary reports.</Text>
+    <Text style={styles.subtitle}>
+      Identify courses needing support and export summary reports.
+    </Text>
     {metrics.map((metric) => (
       <View key={metric.course} style={styles.card}>
         <Ionicons name={metric.icon as any} size={28} color={palette.success} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{metric.course}</Text>
-          <Text style={styles.cardMeta}>Average {metric.average}% • Pass rate {metric.passRate}</Text>
-          <VoiceButton label="View breakdown" onPress={() => {}} />
+          <Text style={styles.cardMeta}>
+            Average {metric.average}% ï¿½ Pass rate {metric.passRate}
+          </Text>
+          <VoiceButton label='View breakdown' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label="Export PDF" onPress={() => {}} />
+    <VoiceButton label='Export PDF' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -32,12 +36,12 @@ const styles = StyleSheet.create({
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

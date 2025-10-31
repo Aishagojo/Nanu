@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
+import React, { useState } from 'react';
+import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -8,13 +8,13 @@ import {
   AlertBanner,
   VoiceSearchBar,
   ChatWidget,
-} from "@components/index";
-import { palette, spacing } from "@theme/index";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { Ionicons } from "@expo/vector-icons";
-import { usePullToRefresh } from "@hooks/usePullToRefresh";
+} from '@components/index';
+import { palette, spacing } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { Ionicons } from '@expo/vector-icons';
+import { usePullToRefresh } from '@hooks/usePullToRefresh';
 
 type HodTile = {
   key: string;
@@ -25,11 +25,41 @@ type HodTile = {
 };
 
 const hodTiles: HodTile[] = [
-  { key: "assignments", title: "Course Assignments", subtitle: "Allocate lecturers and review conflicts.", icon: "swap-horizontal", navigateTo: "HodAssignments" },
-  { key: "timetable", title: "Timetables", subtitle: "Approve weekly schedules with clash detection.", icon: "calendar", navigateTo: "HodTimetable" },
-  { key: "performance", title: "Performance", subtitle: "Monitor averages and pass rates.", icon: "trending-up", navigateTo: "HodPerformance" },
-  { key: "communications", title: "Communications", subtitle: "Broadcast to parents and lecturers.", icon: "mail", navigateTo: "HodCommunications" },
-  { key: "reports", title: "Reports", subtitle: "Generate PDF & CSV summaries.", icon: "document", navigateTo: "HodReports" },
+  {
+    key: 'assignments',
+    title: 'Course Assignments',
+    subtitle: 'Allocate lecturers and review conflicts.',
+    icon: 'swap-horizontal',
+    navigateTo: 'HodAssignments',
+  },
+  {
+    key: 'timetable',
+    title: 'Timetables',
+    subtitle: 'Approve weekly schedules with clash detection.',
+    icon: 'calendar',
+    navigateTo: 'HodTimetable',
+  },
+  {
+    key: 'performance',
+    title: 'Performance',
+    subtitle: 'Monitor averages and pass rates.',
+    icon: 'trending-up',
+    navigateTo: 'HodPerformance',
+  },
+  {
+    key: 'communications',
+    title: 'Communications',
+    subtitle: 'Broadcast to parents and lecturers.',
+    icon: 'mail',
+    navigateTo: 'HodCommunications',
+  },
+  {
+    key: 'reports',
+    title: 'Reports',
+    subtitle: 'Generate PDF & CSV summaries.',
+    icon: 'document',
+    navigateTo: 'HodReports',
+  },
 ];
 
 export const HodDashboardScreen: React.FC = () => {
@@ -41,14 +71,20 @@ export const HodDashboardScreen: React.FC = () => {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
       >
-        <GreetingHeader name="Dr. Kendi" />
+        <GreetingHeader name='Dr. Kendi' />
         <VoiceSearchBar
-          onPress={() => navigation.navigate("Search")}
-          onVoicePress={() => navigation.navigate("Search")}
+          onPress={() => navigation.navigate('Search')}
+          onVoicePress={() => navigation.navigate('Search')}
         />
-        <AlertBanner message="Conflict: CS202 overlaps with ENG110" variant="danger" />
+        <AlertBanner message='Conflict: CS202 overlaps with ENG110' variant='danger' />
         <View style={styles.tiles}>
           {hodTiles.map((tile) => (
             <DashboardTile
@@ -64,9 +100,9 @@ export const HodDashboardScreen: React.FC = () => {
       <FloatingAssistantButton onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
-          { label: "Home", isActive: true },
-          { label: "Search", onPress: () => navigation.navigate("Search") },
-          { label: "Profile", onPress: () => navigation.navigate("Profile") },
+          { label: 'Home', isActive: true },
+          { label: 'Search', onPress: () => navigation.navigate('Search') },
+          { label: 'Profile', onPress: () => navigation.navigate('Profile') },
         ]}
       />
       {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}

@@ -24,6 +24,37 @@ class CourseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ["code", "name", "description"]
 
+    def get_queryset(self):
+        qs = super().get_queryset().select_related("lecturer")
+        user = self.request.user
+        params = self.request.query_params
+        student_param = params.get("student") or params.get("student_id")
+        if user.is_staff:
+            filtered = qs
+        elif user.role == User.Roles.LECTURER:
+            filtered = qs.filter(lecturer=user)
+        elif user.role == User.Roles.STUDENT:
+            filtered = qs.filter(enrollments__student=user)
+        elif user.role == User.Roles.PARENT:
+            student_ids = list(
+                user.linked_students.values_list("student_id", flat=True)
+            )
+            if student_ids:
+                filtered = qs.filter(enrollments__student_id__in=student_ids)
+            else:
+                filtered = qs.none()
+        else:
+            filtered = qs.none()
+
+        if student_param:
+            try:
+                student_id = int(student_param)
+            except (TypeError, ValueError):
+                student_id = None
+            if student_id:
+                filtered = filtered.filter(enrollments__student_id=student_id)
+        return filtered.distinct()
+
 
 class UnitViewSet(viewsets.ModelViewSet):
     queryset = Unit.objects.all().order_by("id")
@@ -46,7 +77,7 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
         if user.role == User.Roles.STUDENT:
             return qs.filter(student=user)
         if user.role == User.Roles.LECTURER:
-            return qs.filter(course__owner=user)
+            return qs.filter(course__lecturer=user)
         return qs.none()
 
     def perform_create(self, serializer):
@@ -195,7 +226,7 @@ class CourseRosterView(APIView):
         if not (
             user.role in allowed_roles
             or user.is_staff
-            or (course.owner_id and course.owner_id == user.id)
+            or (course.lecturer_id and course.lecturer_id == user.id)
         ):
             raise PermissionDenied("You are not allowed to view this roster.")
 
@@ -250,7 +281,7 @@ class AttendanceCheckInView(APIView):
                 raise PermissionDenied("Only the student may confirm their own attendance.")
         else:
             if user.role == User.Roles.LECTURER:
-                if enrollment.course.owner_id != user.id:
+                if enrollment.course.lecturer_id != user.id:
                     raise PermissionDenied("Lecturers may only mark attendance for their courses.")
             elif user.role not in {User.Roles.HOD, User.Roles.RECORDS} and not user.is_staff:
                 raise PermissionDenied("Role not allowed to mark attendance.")
@@ -284,3 +315,4 @@ class ExamRegistrationView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return Response({"detail": "Exam registration confirmed.", "allowed": True})
+

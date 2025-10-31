@@ -1,6 +1,16 @@
-import type { Role } from "@app-types/roles";
+import type { Role } from '@app-types/roles';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+let API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
+try {
+  // Fallback for expo @env usage in some bundlers
+
+  const env = require('@env');
+  if (env?.EXPO_PUBLIC_API_URL) {
+    API_BASE = env.EXPO_PUBLIC_API_URL;
+  }
+} catch {
+  // no-op: keep default
+}
 
 type LoginPayload = {
   username: string;
@@ -42,8 +52,8 @@ export type ApiCourse = {
   code: string;
   name: string;
   description: string;
-  owner?: number | null;
-  owner_name?: string;
+  lecturer?: number | null;
+  lecturer_name?: string;
 };
 
 export type ApiProvisionRequest = {
@@ -87,6 +97,12 @@ export type ApiResource = {
   description: string;
   url?: string | null;
   file?: string | null;
+  category?: number | null;
+  category_name?: string | null;
+  category_parent_name?: string | null;
+  course?: number | null;
+  course_name?: string | null;
+  course_code?: string | null;
 };
 
 type LoginResponse = TokenResponse & {
@@ -114,12 +130,15 @@ export const endpoints = {
   parentLinks: () => `${API_BASE}/api/users/parent-links/`,
   provisionUser: () => `${API_BASE}/api/users/provision/`,
   provisionRequests: () => `${API_BASE}/api/users/provision-requests/`,
-  provisionRequestApprove: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/approve/`,
+  provisionRequestApprove: (id: number) =>
+    `${API_BASE}/api/users/provision-requests/${id}/approve/`,
   provisionRequestReject: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/reject/`,
-  provisionRequestEmailAgain: (id: number) => `${API_BASE}/api/users/provision-requests/${id}/email_again/`,
+  provisionRequestEmailAgain: (id: number) =>
+    `${API_BASE}/api/users/provision-requests/${id}/email_again/`,
   threads: () => `${API_BASE}/api/communications/threads/`,
   messages: () => `${API_BASE}/api/communications/messages/`,
-  progressSummary: (studentId: number) => `${API_BASE}/api/learning/students/${studentId}/progress/`,
+  progressSummary: (studentId: number) =>
+    `${API_BASE}/api/learning/students/${studentId}/progress/`,
   courses: () => `${API_BASE}/api/learning/courses/`,
   quickEnroll: () => `${API_BASE}/api/learning/enrollments/quick/`,
   courseRoster: (courseId: number) => `${API_BASE}/api/learning/courses/${courseId}/roster/`,
@@ -138,7 +157,8 @@ export const endpoints = {
 export const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   const response = await fetch(url, {
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
@@ -151,18 +171,22 @@ export const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   return response.json();
 };
 
-export const loginRequest = async ({ username, password, totp_code }: LoginPayload): Promise<LoginResponse> => {
+export const loginRequest = async ({
+  username,
+  password,
+  totp_code,
+}: LoginPayload): Promise<LoginResponse> => {
   const response = await fetch(endpoints.login(), {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ username, password, totp_code }),
   });
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    const error = (data && (data.detail || data.non_field_errors?.[0])) || "Invalid credentials";
+    const error = (data && (data.detail || data.non_field_errors?.[0])) || 'Invalid credentials';
     throw new Error(error);
   }
 
@@ -171,8 +195,8 @@ export const loginRequest = async ({ username, password, totp_code }: LoginPaylo
 
 export const requestPasswordReset = async (payload: PasswordResetRequestPayload) => {
   const response = await fetch(endpoints.passwordResetRequest(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -184,8 +208,8 @@ export const requestPasswordReset = async (payload: PasswordResetRequestPayload)
 
 export const confirmPasswordReset = async (payload: PasswordResetConfirmPayload) => {
   const response = await fetch(endpoints.passwordResetConfirm(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -197,9 +221,9 @@ export const confirmPasswordReset = async (payload: PasswordResetConfirmPayload)
 
 export const changePasswordSelf = async (newPassword: string, token: string) => {
   const response = await fetch(endpoints.passwordChangeSelf(), {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ new_password: newPassword }),
@@ -211,11 +235,15 @@ export const changePasswordSelf = async (newPassword: string, token: string) => 
   return response.json();
 };
 
-const authedPost = async <T>(url: string, token: string, body: Record<string, unknown> = {}): Promise<T> => {
+const authedPost = async <T>(
+  url: string,
+  token: string,
+  body: Record<string, unknown> = {},
+): Promise<T> => {
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(body),
@@ -228,7 +256,10 @@ const authedPost = async <T>(url: string, token: string, body: Record<string, un
 };
 
 export const requestTotpSetup = async (token: string) =>
-  authedPost<{ secret: string; otpauth_url: string; enabled: boolean }>(endpoints.totpSetup(), token);
+  authedPost<{ secret: string; otpauth_url: string; enabled: boolean }>(
+    endpoints.totpSetup(),
+    token,
+  );
 
 export const activateTotp = async (token: string, code: string) =>
   authedPost<{ detail: string; enabled: boolean }>(endpoints.totpActivate(), token, { code });
@@ -267,13 +298,41 @@ export type ApiThread = {
 
 export const fetchThreads = (token: string) => fetchJson<ApiThread[]>(endpoints.threads(), token);
 
-export const fetchResources = (token: string) => fetchJson<ApiResource[]>(endpoints.resources(), token);
+export const fetchResources = (token: string) =>
+  fetchJson<ApiResource[]>(endpoints.resources(), token);
 
-export const fetchCourses = (token: string) => fetchJson<ApiCourse[]>(endpoints.courses(), token);
+export type CreateThreadPayload = {
+  student: number;
+  teacher: number;
+  parent?: number | null;
+  subject?: string;
+};
+
+export const createThread = (token: string, payload: CreateThreadPayload) =>
+  authedPost<ApiThread>(endpoints.threads(), token, payload);
+
+export const fetchCourses = (
+  token: string,
+  params?: Record<string, string | number | undefined>,
+) => {
+  const search =
+    params && Object.keys(params).length
+      ? `?${new URLSearchParams(
+          Object.entries(params).reduce<Record<string, string>>((acc, [key, value]) => {
+            if (value !== undefined && value !== null) {
+              acc[key] = String(value);
+            }
+            return acc;
+          }, {}),
+        ).toString()}`
+      : '';
+  return fetchJson<ApiCourse[]>(`${endpoints.courses()}${search}`, token);
+};
 
 export const fetchUsers = (token: string) => fetchJson<ApiUser[]>(endpoints.usersList(), token);
 
-export const fetchParentLinks = (token: string) => fetchJson<ApiParentLink[]>(endpoints.parentLinks(), token);
+export const fetchParentLinks = (token: string) =>
+  fetchJson<ApiParentLink[]>(endpoints.parentLinks(), token);
 
 export const fetchProvisionRequests = (token: string) =>
   fetchJson<ApiProvisionRequest[]>(endpoints.provisionRequests(), token);
@@ -306,7 +365,7 @@ export const createParentLink = (token: string, payload: ParentLinkPayload) =>
 
 export type ProvisionRequestPayload = {
   username: string;
-  role: Extract<Role, "student" | "parent">;
+  role: Extract<Role, 'student' | 'parent'>;
   display_name?: string;
   email?: string;
   records_passcode: string;
@@ -326,10 +385,17 @@ export const quickEnrollStudent = (token: string, payload: QuickEnrollPayload) =
   authedPost<{ detail: string }>(endpoints.quickEnroll(), token, payload);
 
 export const approveProvisionRequest = (token: string, requestId: number) =>
-  authedPost<{ user: ApiUser; temporary_password: string }>(endpoints.provisionRequestApprove(requestId), token);
+  authedPost<{ user: ApiUser; temporary_password: string }>(
+    endpoints.provisionRequestApprove(requestId),
+    token,
+  );
 
 export const rejectProvisionRequest = (token: string, requestId: number, reason?: string) =>
-  authedPost<ApiProvisionRequest>(endpoints.provisionRequestReject(requestId), token, reason ? { reason } : {});
+  authedPost<ApiProvisionRequest>(
+    endpoints.provisionRequestReject(requestId),
+    token,
+    reason ? { reason } : {},
+  );
 
 export const emailProvisionCredentials = (token: string, requestId: number) =>
   authedPost<{ detail: string }>(endpoints.provisionRequestEmailAgain(requestId), token);
@@ -341,7 +407,7 @@ export type AttendancePayload = {
   enrollment_id?: number;
   student_id?: number;
   course_id?: number;
-  event_type?: "lecturer_mark" | "student_checkin";
+  event_type?: 'lecturer_mark' | 'student_checkin';
   note?: string;
 };
 
@@ -359,25 +425,28 @@ type CreateMessagePayload = {
   audioMimeType?: string;
 };
 
-export const createMessage = async (token: string, payload: CreateMessagePayload): Promise<ApiMessage> => {
+export const createMessage = async (
+  token: string,
+  payload: CreateMessagePayload,
+): Promise<ApiMessage> => {
   const { thread, body, transcript, audioUri, audioMimeType } = payload;
   const form = new FormData();
-  form.append("thread", String(thread));
+  form.append('thread', String(thread));
   if (body !== undefined) {
-    form.append("body", body);
+    form.append('body', body);
   }
   if (transcript) {
-    form.append("transcript", transcript);
+    form.append('transcript', transcript);
   }
   if (audioUri) {
-    form.append("audio", {
+    form.append('audio', {
       uri: audioUri,
       name: `voice-${Date.now()}.m4a`,
-      type: audioMimeType ?? "audio/m4a",
+      type: audioMimeType ?? 'audio/m4a',
     } as any);
   }
   const response = await fetch(endpoints.messages(), {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -393,16 +462,64 @@ export const createMessage = async (token: string, payload: CreateMessagePayload
 export const transcribeAudio = async (
   token: string,
   uri: string,
-  mimeType: string = "audio/m4a"
+  mimeType: string = 'audio/m4a',
 ): Promise<{ text: string }> => {
   const form = new FormData();
-  form.append("audio", {
+  form.append('audio', {
     uri,
     name: `clip-${Date.now()}.m4a`,
     type: mimeType,
   } as any);
   const response = await fetch(endpoints.transcribe(), {
-    method: "POST",
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: form,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || response.statusText);
+  }
+  return response.json();
+};
+
+// Repository
+export type CreateResourcePayload = {
+  title: string;
+  description?: string;
+  kind: ApiResource['kind'];
+  url?: string;
+  fileUri?: string; // provide either url or fileUri
+  fileMimeType?: string;
+  course: number;
+};
+
+export const createResource = async (
+  token: string,
+  payload: CreateResourcePayload,
+): Promise<ApiResource> => {
+  const { title, description, kind, url, fileUri, fileMimeType, course } = payload;
+  const form = new FormData();
+  form.append('title', title);
+  form.append('kind', kind);
+  if (description) {
+    form.append('description', description);
+  }
+  if (url) {
+    form.append('url', url);
+  }
+  form.append('course', String(course));
+  if (fileUri) {
+    form.append('file', {
+      uri: fileUri,
+      // backend does not care about the exact name, use a timestamp
+      name: `upload-${Date.now()}`,
+      type: fileMimeType || 'application/octet-stream',
+    } as any);
+  }
+  const response = await fetch(endpoints.resources(), {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },

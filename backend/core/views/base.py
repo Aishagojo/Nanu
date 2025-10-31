@@ -49,38 +49,36 @@ def transcribe_audio(request):
     if not upload:
         return Response({"detail": "audio file is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    original_path = None
-    wav_path = None
+    # Save uploaded audio temporarily
+    with NamedTemporaryFile(suffix=".webm", delete=False) as temp_audio:
+        for chunk in upload.chunks():
+            temp_audio.write(chunk)
+        temp_audio_path = temp_audio.name
+
     try:
-        with NamedTemporaryFile(suffix=os.path.splitext(upload.name or "")[1] or ".m4a", delete=False) as temp_in:
-            for chunk in upload.chunks():
-                temp_in.write(chunk)
-            original_path = temp_in.name
+        # Convert to WAV using pydub
+        audio = AudioSegment.from_file(temp_audio_path)
+        wav_path = temp_audio_path + ".wav"
+        audio.export(wav_path, format="wav")
 
-        audio = AudioSegment.from_file(original_path)
-        with NamedTemporaryFile(suffix=".wav", delete=False) as temp_out:
-            audio.export(temp_out.name, format="wav")
-            wav_path = temp_out.name
-
+        # Use speech recognition
         recognizer = sr.Recognizer()
         with sr.AudioFile(wav_path) as source:
             audio_data = recognizer.record(source)
-        try:
             text = recognizer.recognize_google(audio_data)
-        except sr.UnknownValueError:
-            text = ""
-        except sr.RequestError as exc:
-            return Response({"detail": f"Transcription service error: {exc}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         return Response({"text": text})
-    except FileNotFoundError as exc:
-        return Response({"detail": f"Decoder error: {exc}"}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as exc:
-        return Response({"detail": f"Unable to transcribe audio: {exc}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response(
+            {"detail": f"Failed to transcribe audio: {str(e)}"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     finally:
-        for path in (original_path, wav_path):
-            if path and os.path.exists(path):
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+        # Cleanup temp files
+        try:
+            os.unlink(temp_audio_path)
+            os.unlink(wav_path)
+        except:
+            pass

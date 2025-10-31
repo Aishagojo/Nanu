@@ -1,56 +1,56 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, TextInput, Text, Alert, TouchableOpacity } from "react-native";
-import { VoiceButton } from "@components/index";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { useAuth } from "@context/AuthContext";
-import { changePasswordSelf } from "@services/api";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, TextInput, Text, Alert, TouchableOpacity } from 'react-native';
+import { VoiceButton } from '@components/index';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { useAuth } from '@context/AuthContext';
+import { changePasswordSelf } from '@services/api';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { useNavigation } from '@react-navigation/native';
 
 export const ForcePasswordChangeScreen: React.FC = () => {
   const { state, markPasswordUpdated, logout } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const user = state.user;
-  const roleName = useMemo(() => user?.role.toUpperCase() ?? "", [user?.role]);
+  const roleName = useMemo(() => user?.role.toUpperCase() ?? '', [user?.role]);
 
   useEffect(() => {
     if (user && !user.must_change_password) {
-      navigation.reset({ index: 0, routes: [{ name: "Dashboard", params: { role: user.role } }] });
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard', params: { role: user.role } }] });
     }
     if (!user) {
-      navigation.reset({ index: 0, routes: [{ name: "RoleSelection" }] });
+      navigation.reset({ index: 0, routes: [{ name: 'RoleSelection' }] });
     }
   }, [navigation, user]);
 
   const handleSubmit = async () => {
     if (!user || !state.accessToken) {
-      Alert.alert("Session expired", "Please sign in again.");
+      Alert.alert('Session expired', 'Please sign in again.');
       await logout();
       return;
     }
     if (!password || password.length < 8) {
-      Alert.alert("Password too short", "Use at least 8 characters.");
+      Alert.alert('Password too short', 'Use at least 8 characters.');
       return;
     }
     if (password !== confirm) {
-      Alert.alert("Mismatch", "Passwords do not match.");
+      Alert.alert('Mismatch', 'Passwords do not match.');
       return;
     }
     try {
       setSubmitting(true);
       await changePasswordSelf(password, state.accessToken);
       markPasswordUpdated();
-      Alert.alert("Updated", "Password changed successfully.");
+      Alert.alert('Updated', 'Password changed successfully.');
     } catch (error: any) {
-      Alert.alert("Error", error?.message ?? "Failed to update password");
+      Alert.alert('Error', error?.message ?? 'Failed to update password');
     } finally {
       setSubmitting(false);
     }
@@ -69,7 +69,7 @@ export const ForcePasswordChangeScreen: React.FC = () => {
       <View style={styles.inputRow}>
         <TextInput
           style={[styles.input, styles.inputFlex]}
-          placeholder="New password"
+          placeholder='New password'
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
@@ -77,16 +77,20 @@ export const ForcePasswordChangeScreen: React.FC = () => {
         <TouchableOpacity
           onPress={() => setShowPassword((prev) => !prev)}
           style={styles.eyeButton}
-          accessibilityRole="button"
-          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+          accessibilityRole='button'
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
         >
-          <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color={palette.textSecondary} />
+          <Ionicons
+            name={showPassword ? 'eye' : 'eye-off'}
+            size={24}
+            color={palette.textSecondary}
+          />
         </TouchableOpacity>
       </View>
       <View style={styles.inputRow}>
         <TextInput
           style={[styles.input, styles.inputFlex]}
-          placeholder="Confirm password"
+          placeholder='Confirm password'
           secureTextEntry={!showConfirm}
           value={confirm}
           onChangeText={setConfirm}
@@ -94,18 +98,22 @@ export const ForcePasswordChangeScreen: React.FC = () => {
         <TouchableOpacity
           onPress={() => setShowConfirm((prev) => !prev)}
           style={styles.eyeButton}
-          accessibilityRole="button"
-          accessibilityLabel={showConfirm ? "Hide password" : "Show password"}
+          accessibilityRole='button'
+          accessibilityLabel={showConfirm ? 'Hide password' : 'Show password'}
         >
-          <Ionicons name={showConfirm ? "eye" : "eye-off"} size={24} color={palette.textSecondary} />
+          <Ionicons
+            name={showConfirm ? 'eye' : 'eye-off'}
+            size={24}
+            color={palette.textSecondary}
+          />
         </TouchableOpacity>
       </View>
       <VoiceButton
-        label={submitting ? "Saving..." : "Save password"}
+        label={submitting ? 'Saving...' : 'Save password'}
         onPress={handleSubmit}
-        accessibilityHint="Set new password"
+        accessibilityHint='Set new password'
       />
-      <VoiceButton label="Logout" onPress={logout} accessibilityHint="Sign out" />
+      <VoiceButton label='Logout' onPress={logout} accessibilityHint='Sign out' />
     </View>
   );
 };
@@ -135,8 +143,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: palette.surface,
     borderRadius: 16,
     borderWidth: 1,

@@ -1,5 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { ScrollView, View, StyleSheet, Text, RefreshControl, ActivityIndicator } from "react-native";
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ScrollView,
+  View,
+  StyleSheet,
+  Text,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -10,20 +17,20 @@ import {
   NotificationBell,
   VoiceSearchBar,
   ChatWidget,
-} from "@components/index";
-import { palette, spacing, typography } from "@theme/index";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@navigation/AppNavigator";
-import { Ionicons } from "@expo/vector-icons";
-import { usePullToRefresh } from "@hooks/usePullToRefresh";
-import { useAuth } from "@context/AuthContext";
-import { fetchParentLinks, type ApiParentLink } from "@services/api";
+} from '@components/index';
+import { palette, spacing, typography } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@navigation/AppNavigator';
+import { Ionicons } from '@expo/vector-icons';
+import { usePullToRefresh } from '@hooks/usePullToRefresh';
+import { useAuth } from '@context/AuthContext';
+import { fetchParentLinks, type ApiParentLink } from '@services/api';
 
 const progressBars = [
-  { subject: "Math", color: palette.success, value: 85 },
-  { subject: "Science", color: palette.warning, value: 72 },
-  { subject: "English", color: palette.danger, value: 58 },
+  { subject: 'Math', color: palette.success, value: 85 },
+  { subject: 'Science', color: palette.warning, value: 72 },
+  { subject: 'English', color: palette.danger, value: 58 },
 ];
 
 type ParentTile = {
@@ -35,12 +42,48 @@ type ParentTile = {
 };
 
 const parentTiles: ParentTile[] = [
-  { key: "progress", title: "Progress", subtitle: "Color bars and attendance toggles.", icon: "ribbon", navigateTo: "ParentProgress" },
-  { key: "fees", title: "Fees", subtitle: "Balances, plans, and quick payments.", icon: "cash", navigateTo: "ParentFees" },
-  { key: "messages", title: "Messages", subtitle: "Threads with teachers and admin.", icon: "chatbubble", navigateTo: "ParentMessages" },
-  { key: "timetable", title: "Timetable", subtitle: "Listen to today or plan the week.", icon: "time", navigateTo: "ParentTimetable" },
-  { key: "announcements", title: "Announcements", subtitle: "School notices with audio playback.", icon: "megaphone", navigateTo: "ParentAnnouncements" },
-  { key: "rewards", title: "Rewards Hub", subtitle: "See your student's perks.", icon: "gift", navigateTo: "Rewards" },
+  {
+    key: 'progress',
+    title: 'Progress',
+    subtitle: 'Color bars and attendance toggles.',
+    icon: 'ribbon',
+    navigateTo: 'ParentProgress',
+  },
+  {
+    key: 'fees',
+    title: 'Fees',
+    subtitle: 'Balances, plans, and quick payments.',
+    icon: 'cash',
+    navigateTo: 'ParentFees',
+  },
+  {
+    key: 'messages',
+    title: 'Messages',
+    subtitle: 'Threads with teachers and admin.',
+    icon: 'chatbubble',
+    navigateTo: 'ParentMessages',
+  },
+  {
+    key: 'timetable',
+    title: 'Timetable',
+    subtitle: 'Listen to today or plan the week.',
+    icon: 'time',
+    navigateTo: 'ParentTimetable',
+  },
+  {
+    key: 'announcements',
+    title: 'Announcements',
+    subtitle: 'School notices with audio playback.',
+    icon: 'megaphone',
+    navigateTo: 'ParentAnnouncements',
+  },
+  {
+    key: 'rewards',
+    title: 'Rewards Hub',
+    subtitle: "See your student's perks.",
+    icon: 'gift',
+    navigateTo: 'Rewards',
+  },
 ];
 
 export const ParentDashboardScreen: React.FC = () => {
@@ -53,7 +96,7 @@ export const ParentDashboardScreen: React.FC = () => {
   const [linkError, setLinkError] = useState<string | null>(null);
 
   const loadLinks = useCallback(async () => {
-    if (state.user?.role !== "parent" || !state.accessToken) {
+    if (state.user?.role !== 'parent' || !state.accessToken) {
       return;
     }
     try {
@@ -62,8 +105,8 @@ export const ParentDashboardScreen: React.FC = () => {
       setLinks(data);
       setLinkError(null);
     } catch (error: any) {
-      console.warn("Failed to load parent links", error);
-      setLinkError(error?.message ?? "Unable to load linked students.");
+      console.warn('Failed to load parent links', error);
+      setLinkError(error?.message ?? 'Unable to load linked students.');
     } finally {
       setLoadingLinks(false);
     }
@@ -73,20 +116,26 @@ export const ParentDashboardScreen: React.FC = () => {
     loadLinks();
   }, [loadLinks]);
 
-  const parentName = state.user?.display_name?.trim() || state.user?.username || "Parent";
+  const parentName = state.user?.display_name?.trim() || state.user?.username || 'Parent';
 
   return (
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
       >
         <GreetingHeader name={parentName} rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
-          onPress={() => navigation.navigate("Search")}
-          onVoicePress={() => navigation.navigate("Search")}
+          onPress={() => navigation.navigate('Search')}
+          onVoicePress={() => navigation.navigate('Search')}
         />
-        {state.user?.role === "parent" ? (
+        {state.user?.role === 'parent' ? (
           <View style={styles.childCard}>
             <Text style={styles.childCardTitle}>Student on file</Text>
             {loadingLinks ? (
@@ -96,25 +145,34 @@ export const ParentDashboardScreen: React.FC = () => {
             ) : links.length ? (
               links.map((link) => (
                 <View key={link.id} style={styles.childRow}>
-                  <Text style={styles.childName}>{link.student_detail.display_name || link.student_detail.username}</Text>
+                  <Text style={styles.childName}>
+                    {link.student_detail.display_name || link.student_detail.username}
+                  </Text>
                   <Text style={styles.childMeta}>
-                    Relationship: {link.relationship || "Not specified"}
+                    Relationship: {link.relationship || 'Not specified'}
                   </Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.helperText}>No student is linked yet. Ask Records to connect your child.</Text>
+              <Text style={styles.helperText}>
+                No student is linked yet. Ask Records to connect your child.
+              </Text>
             )}
           </View>
         ) : null}
-        <AlertBanner message="KES 12,000 due in 5 days" variant="warning" />
+        <AlertBanner message='KES 12,000 due in 5 days' variant='warning' />
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Progress Overview</Text>
           {progressBars.map((bar) => (
             <View key={bar.subject} style={styles.progressRow}>
               <Text style={styles.progressLabel}>{bar.subject}</Text>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${bar.value}%`, backgroundColor: bar.color }]} />
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${bar.value}%`, backgroundColor: bar.color },
+                  ]}
+                />
               </View>
               <Text style={styles.progressValue}>{bar.value}%</Text>
             </View>
@@ -130,14 +188,14 @@ export const ParentDashboardScreen: React.FC = () => {
           />
         ))}
       </ScrollView>
-      <VoiceButton label="Speak summary" onPress={() => navigation.navigate("ParentProgress")} />
-      <FloatingAssistantButton label="Chat" onPress={() => setShowAssistant(true)} />
+      <VoiceButton label='Speak summary' onPress={() => navigation.navigate('ParentProgress')} />
+      <FloatingAssistantButton label='Chat' onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
-          { label: "Home", isActive: true },
-          { label: "Rewards", onPress: () => navigation.navigate("Rewards") },
-          { label: "Search", onPress: () => navigation.navigate("Search") },
-          { label: "Profile", onPress: () => navigation.navigate("Profile") },
+          { label: 'Home', isActive: true },
+          { label: 'Rewards', onPress: () => navigation.navigate('Rewards') },
+          { label: 'Search', onPress: () => navigation.navigate('Search') },
+          { label: 'Profile', onPress: () => navigation.navigate('Profile') },
         ]}
       />
       {showAssistant ? <ChatWidget onClose={() => setShowAssistant(false)} /> : null}
@@ -193,8 +251,8 @@ const styles = StyleSheet.create({
     color: palette.textPrimary,
   },
   progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   progressLabel: {
@@ -207,15 +265,15 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 12,
     backgroundColor: palette.disabled,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   progressFill: {
-    height: "100%",
+    height: '100%',
     borderRadius: 12,
   },
   progressValue: {
     width: 48,
-    textAlign: "right",
+    textAlign: 'right',
     ...typography.helper,
   },
 });

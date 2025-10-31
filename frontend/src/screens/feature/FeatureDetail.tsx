@@ -1,9 +1,9 @@
-import React from "react";
-import { View, StyleSheet, Text, ScrollView } from "react-native";
-import { palette, spacing, typography } from "@theme/index";
-import { FeatureDescriptor } from "@data/featureCatalog";
-import { VoiceButton } from "@components/index";
-import type { Role } from "@app-types/roles";
+import React from 'react';
+import { View, StyleSheet, Text, ScrollView } from 'react-native';
+import { palette, spacing, typography } from '@theme/index';
+import { FeatureDescriptor } from '@data/featureCatalog';
+import { VoiceButton } from '@components/index';
+import type { Role } from '@app-types/roles';
 
 interface FeatureDetailProps {
   feature: FeatureDescriptor;
@@ -21,15 +21,28 @@ export const FeatureDetail: React.FC<FeatureDetailProps> = ({ feature, role, onS
     </View>
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>What you can do</Text>
-      <Text style={styles.body}>This screen will host the detailed workflow for the selected tile, including live data, voice shortcuts, and accessibility controls. Use this prototype to explore layouts and interactions before wiring real data.</Text>
+      <Text style={styles.body}>
+        This screen will host the detailed workflow for the selected tile, including live data,
+        voice shortcuts, and accessibility controls. Use this prototype to explore layouts and
+        interactions before wiring real data.
+      </Text>
     </View>
     {feature.callToAction ? (
-      <VoiceButton label={feature.callToAction} onPress={() => {}} accessibilityHint={`Open ${feature.title}`} />
+      <VoiceButton
+        label={feature.callToAction}
+        onPress={() => {}}
+        accessibilityHint={`Open ${feature.title}`}
+      />
     ) : null}
     <View style={styles.footer}>
-      <Text style={styles.footerText}>Tip: use the voice button to preview narration and ensure minimum 48dp targets for all controls.</Text>
+      <Text style={styles.footerText}>
+        Tip: use the voice button to preview narration and ensure minimum 48dp targets for all
+        controls.
+      </Text>
     </View>
-    {onSpeak ? <VoiceButton label="Read aloud" onPress={onSpeak} accessibilityHint="Play an audio summary" /> : null}
+    {onSpeak ? (
+      <VoiceButton label='Read aloud' onPress={onSpeak} accessibilityHint='Play an audio summary' />
+    ) : null}
   </ScrollView>
 );
 
@@ -64,7 +77,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: 24,
     gap: spacing.sm,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,

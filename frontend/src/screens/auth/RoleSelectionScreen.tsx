@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { View, StyleSheet, FlatList } from "react-native";
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
 import {
   DashboardTile,
   GreetingHeader,
@@ -8,9 +8,9 @@ import {
   FloatingAssistantButton,
   ChatWidget,
   FaqModal,
-} from "@components/index";
-import { palette, spacing } from "@theme/index";
-import type { Role } from "@app-types/roles";
+} from '@components/index';
+import { palette, spacing } from '@theme/index';
+import type { Role } from '@app-types/roles';
 
 type RoleOption = {
   key: Role;
@@ -19,14 +19,22 @@ type RoleOption = {
 };
 
 const roles: RoleOption[] = [
-  { key: "student", title: "Student", subtitle: "Access timetable, assignments, and help" },
-  { key: "parent", title: "Parent", subtitle: "Track progress, fees, and messages" },
-  { key: "lecturer", title: "Lecturer", subtitle: "Manage classes, assignments, communication" },
-  { key: "hod", title: "Head of Department", subtitle: "Assign courses, view performance" },
-  { key: "finance", title: "Finance Officer", subtitle: "Manage fees, receipts, and alerts" },
-  { key: "records", title: "Records Officer", subtitle: "Publish grades, transcripts, verifications" },
-  { key: "admin", title: "Administrator", subtitle: "Manage users, systems, policies" },
-  { key: "superadmin", title: "Super Administrator", subtitle: "Govern roles, platform security, and compliance" },
+  { key: 'student', title: 'Student', subtitle: 'Access timetable, assignments, and help' },
+  { key: 'parent', title: 'Parent', subtitle: 'Track progress, fees, and messages' },
+  { key: 'lecturer', title: 'Lecturer', subtitle: 'Manage classes, assignments, communication' },
+  { key: 'hod', title: 'Head of Department', subtitle: 'Assign courses, view performance' },
+  { key: 'finance', title: 'Finance Officer', subtitle: 'Manage fees, receipts, and alerts' },
+  {
+    key: 'records',
+    title: 'Records Officer',
+    subtitle: 'Publish grades, transcripts, verifications',
+  },
+  { key: 'admin', title: 'Administrator', subtitle: 'Manage users, systems, policies' },
+  {
+    key: 'superadmin',
+    title: 'Super Administrator',
+    subtitle: 'Govern roles, platform security, and compliance',
+  },
 ];
 
 interface RoleSelectionScreenProps {
@@ -36,7 +44,7 @@ interface RoleSelectionScreenProps {
 export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ onSelectRole }) => {
   const [showHelper, setShowHelper] = useState(false);
   const [showFaq, setShowFaq] = useState(false);
-  const greeting = useMemo(() => `Welcome to EduAssist!`, []);
+  const greeting = useMemo(() => 'Welcome to EduAssist!', []);
   return (
     <View style={styles.container}>
       <GreetingHeader name="Guest" greeting={greeting} />
@@ -44,7 +52,7 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ onSele
         data={roles}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        ItemSeparatorComponent={Separator}
         renderItem={({ item }) => (
           <DashboardTile
             title={item.title}
@@ -73,6 +81,8 @@ export const RoleSelectionScreen: React.FC<RoleSelectionScreenProps> = ({ onSele
     </View>
   );
 };
+
+const Separator: React.FC = () => <View style={{ height: spacing.md }} />;
 
 const styles = StyleSheet.create({
   container: {

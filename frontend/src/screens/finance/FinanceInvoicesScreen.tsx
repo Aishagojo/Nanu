@@ -1,29 +1,33 @@
-import React from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { palette, spacing, typography } from "@theme/index";
-import { VoiceButton } from "@components/index";
+import React from 'react';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { palette, spacing, typography } from '@theme/index';
+import { VoiceButton } from '@components/index';
 
 const invoices = [
-  { reference: "INV-2025-034", amount: "KES 15,000", destination: "WhatsApp" },
-  { reference: "INV-2025-035", amount: "KES 8,500", destination: "Email" },
+  { reference: 'INV-2025-034', amount: 'KES 15,000', destination: 'WhatsApp' },
+  { reference: 'INV-2025-035', amount: 'KES 8,500', destination: 'Email' },
 ];
 
 export const FinanceInvoicesScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
     <Text style={styles.title}>Invoices & Receipts</Text>
-    <Text style={styles.subtitle}>Generate receipts instantly and send via SMS, email, or WhatsApp.</Text>
+    <Text style={styles.subtitle}>
+      Generate receipts instantly and send via SMS, email, or WhatsApp.
+    </Text>
     {invoices.map((invoice) => (
       <View key={invoice.reference} style={styles.card}>
-        <Ionicons name="paper-plane" size={28} color={palette.accent} />
+        <Ionicons name='paper-plane' size={28} color={palette.accent} />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{invoice.reference}</Text>
-          <Text style={styles.cardMeta}>{invoice.amount} • {invoice.destination}</Text>
-          <VoiceButton label="Resend" onPress={() => {}} />
+          <Text style={styles.cardMeta}>
+            {invoice.amount} ï¿½ {invoice.destination}
+          </Text>
+          <VoiceButton label='Resend' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label="Create invoice" onPress={() => {}} />
+    <VoiceButton label='Create invoice' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -42,12 +46,12 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.md,
     backgroundColor: palette.surface,
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
