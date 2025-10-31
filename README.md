@@ -62,7 +62,7 @@ Nanu is the voice-first OS powering inclusive education. Built for high-needs st
 - The UI honors per-user preferences (simple language, contrast, speech rate) retrieved from `/api/users/me/`, and helper modals reduce cognitive load by chunking actions.
 
 ---
-
+Pitch Deck: https://www.beautiful.ai/player/-Ocvfe1pZRhNDSixHWqe/Nanu-Powering-Inclusive-Education-through-Voice-First-AI-and-Blockchain
 ## System Architecture
 
 ### Backend (Django 5 + DRF)
