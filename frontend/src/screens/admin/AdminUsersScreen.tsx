@@ -28,6 +28,21 @@ const roleCycle: Role[] = [
   'librarian',
 ];
 
+const roleLabels: Record<Role, string> = {
+  student: 'Students',
+  parent: 'Guardians',
+  lecturer: 'Lecturers',
+  hod: 'Heads of Department',
+  finance: 'Finance',
+  records: 'Records Office',
+  admin: 'Administrators',
+  superadmin: 'Super Administrators',
+  librarian: 'Librarians',
+};
+
+const staffRoles: Role[] = ['lecturer', 'hod', 'finance', 'records', 'admin', 'superadmin', 'librarian'];
+const staffRoleSet = new Set<Role>(staffRoles);
+
 const getNextRole = (current: Role): Role => {
   const index = roleCycle.indexOf(current);
   if (index === -1) {
@@ -71,6 +86,24 @@ export const AdminUsersScreen: React.FC = () => {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  const groupedUsers = useMemo(() => {
+    const students = users.filter((user) => user.role === 'student');
+    const guardians = users.filter((user) => user.role === 'parent');
+    const staff = users.filter((user) => staffRoleSet.has(user.role as Role));
+    return { students, guardians, staff };
+  }, [users]);
+
+  const staffByRole = useMemo(() => {
+    const map = new Map<Role, ApiUser[]>();
+    staffRoles.forEach((role) => map.set(role, []));
+    groupedUsers.staff.forEach((user) => {
+      const role = user.role as Role;
+      const existing = map.get(role) ?? [];
+      map.set(role, [...existing, user]);
+    });
+    return map;
+  }, [groupedUsers.staff]);
 
   const loadRequests = useCallback(async () => {
     if (!accessToken || !canReviewRequests) {
@@ -121,9 +154,9 @@ export const AdminUsersScreen: React.FC = () => {
 
   const subtitle = useMemo(() => {
     if (!isSuperAdmin) {
-      return 'View accounts and audit authenticator usage. Role changes require super administrator access.';
+      return 'View accounts grouped by students, guardians, and staff. Role changes require super administrator access.';
     }
-    return 'Cycle through roles for each account to keep access aligned with responsibilities.';
+    return 'Cycle through roles for each account to keep access aligned with responsibilities. Users are grouped for quicker scanning.';
   }, [isSuperAdmin]);
 
   const pendingRequests = useMemo(
@@ -202,6 +235,34 @@ export const AdminUsersScreen: React.FC = () => {
     ]);
   };
 
+  const renderUserCard = (user: ApiUser) => (
+    <View key={user.id} style={styles.card}>
+      <Ionicons name='person' size={28} color={palette.primary} />
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle}>{user.username}</Text>
+        <Text style={styles.cardMeta}>
+          Role: {user.role.toUpperCase()} | MFA: {user.totp_enabled ? 'Enabled' : 'Disabled'}
+        </Text>
+        <Text style={styles.cardMeta}>
+          Status: {user.must_change_password ? 'Needs password change' : 'Active'}
+        </Text>
+        <VoiceButton
+          label={
+            processingId === user.id
+              ? 'Updating...'
+              : isSuperAdmin
+              ? `Assign next role (${getNextRole(user.role)})`
+              : 'View permissions'
+          }
+          onPress={() =>
+            isSuperAdmin ? handleAssign(user) : Alert.alert('Roles', 'Review completed.')
+          }
+          accessibilityHint='Cycle to the next available role for this user'
+        />
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Users & Roles</Text>
@@ -216,33 +277,60 @@ export const AdminUsersScreen: React.FC = () => {
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
-        users.map((user) => (
-          <View key={user.id} style={styles.card}>
-            <Ionicons name='person' size={28} color={palette.primary} />
-            <View style={styles.cardBody}>
-              <Text style={styles.cardTitle}>{user.username}</Text>
-              <Text style={styles.cardMeta}>
-                Role: {user.role.toUpperCase()} | MFA: {user.totp_enabled ? 'Enabled' : 'Disabled'}
-              </Text>
-              <Text style={styles.cardMeta}>
-                Status: {user.must_change_password ? 'Needs password change' : 'Active'}
-              </Text>
-              <VoiceButton
-                label={
-                  processingId === user.id
-                    ? 'Updating...'
-                    : isSuperAdmin
-                    ? `Assign next role (${getNextRole(user.role)})`
-                    : 'View permissions'
-                }
-                onPress={() =>
-                  isSuperAdmin ? handleAssign(user) : Alert.alert('Roles', 'Review completed.')
-                }
-                accessibilityHint='Cycle to the next available role for this user'
-              />
-            </View>
+        <>
+          <View style={styles.groupSection}>
+            <Text style={styles.groupTitle}>
+              Students ({groupedUsers.students.length})
+            </Text>
+            <Text style={styles.groupSubtitle}>
+              All enrolled learners with individual dashboards.
+            </Text>
+            {groupedUsers.students.length ? (
+              groupedUsers.students.map(renderUserCard)
+            ) : (
+              <Text style={styles.helper}>No student accounts found yet.</Text>
+            )}
           </View>
-        ))
+
+          <View style={styles.groupSection}>
+            <Text style={styles.groupTitle}>
+              Guardians ({groupedUsers.guardians.length})
+            </Text>
+            <Text style={styles.groupSubtitle}>
+              Guardians linked to student records.
+            </Text>
+            {groupedUsers.guardians.length ? (
+              groupedUsers.guardians.map(renderUserCard)
+            ) : (
+              <Text style={styles.helper}>No guardian accounts found yet.</Text>
+            )}
+          </View>
+
+          <View style={styles.groupSection}>
+            <Text style={styles.groupTitle}>
+              Staff ({groupedUsers.staff.length})
+            </Text>
+            <Text style={styles.groupSubtitle}>
+              Lecturers, finance, HODs, records, admin, and support roles.
+            </Text>
+            {groupedUsers.staff.length ? (
+              staffRoles.map((role) => {
+                const roleUsers = staffByRole.get(role) ?? [];
+                if (!roleUsers.length) {
+                  return null;
+                }
+                return (
+                  <View key={role} style={styles.subGroupSection}>
+                    <Text style={styles.subGroupTitle}>{roleLabels[role]}</Text>
+                    {roleUsers.map(renderUserCard)}
+                  </View>
+                );
+              })
+            ) : (
+              <Text style={styles.helper}>No staff accounts found yet.</Text>
+            )}
+          </View>
+        </>
       )}
       {canReviewRequests ? (
         <>
@@ -321,6 +409,11 @@ const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.lg, backgroundColor: palette.background },
   title: { ...typography.headingXL, color: palette.textPrimary },
   subtitle: { ...typography.body, color: palette.textSecondary },
+  groupSection: { gap: spacing.sm, marginTop: spacing.lg },
+  groupTitle: { ...typography.headingL, color: palette.textPrimary },
+  groupSubtitle: { ...typography.helper, color: palette.textSecondary },
+  subGroupSection: { gap: spacing.sm, marginTop: spacing.md },
+  subGroupTitle: { ...typography.headingM, color: palette.textPrimary },
   error: { ...typography.body, color: palette.danger },
   card: {
     flexDirection: 'row',

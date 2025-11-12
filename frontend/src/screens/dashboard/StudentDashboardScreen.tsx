@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '@context/AuthContext';
 import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import {
   GreetingHeader,
@@ -75,6 +76,10 @@ export const StudentDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
   const [showAssistant, setShowAssistant] = useState(false);
+  const { state } = useAuth();
+
+  const studentName =
+    state.user?.display_name?.trim() || state.user?.username || 'Student';
 
   return (
     <View style={styles.container}>
@@ -88,7 +93,7 @@ export const StudentDashboardScreen: React.FC = () => {
           />
         }
       >
-        <GreetingHeader name='Aisha' rightAccessory={<NotificationBell />} />
+        <GreetingHeader name={studentName} rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
           onPress={() => navigation.navigate('Search')}
           onVoicePress={() => navigation.navigate('Search')}
@@ -143,3 +148,5 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
 });
+
+

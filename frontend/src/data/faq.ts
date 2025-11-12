@@ -7,7 +7,7 @@ export const globalFaq: FaqItem[] = [
   {
     question: 'How do I choose the right role?',
     answer:
-      'Tap the card that matches your responsibility (Student, Parent, Lecturer, etc.). Each role has a tailored dashboard and login screen.',
+      'Tap the card that matches your responsibility (Student, Guardian, Lecturer, etc.). Each role has a tailored dashboard and login screen.',
   },
   {
     question: 'I forgot my password, what do I do?',
@@ -20,9 +20,9 @@ export const globalFaq: FaqItem[] = [
       'After signing in as a student or lecturer, navigate to the dashboard tiles such as Timetable, Assignments, or Library to access your resources.',
   },
   {
-    question: 'How can parents monitor progress and fees?',
+    question: 'How can guardians monitor progress and fees?',
     answer:
-      'Choose the Parent role, sign in, and open the Progress or Fees tiles. Each tile provides summaries and actions tailored for guardians.',
+      'Choose the Guardian role, sign in, and open the Progress or Fees tiles. Each tile provides summaries and actions tailored to family support.',
   },
   {
     question: 'Who should I contact for technical issues?',

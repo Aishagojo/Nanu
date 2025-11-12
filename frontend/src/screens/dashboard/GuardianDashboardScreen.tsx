@@ -25,7 +25,7 @@ import { RootStackParamList } from '@navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { usePullToRefresh } from '@hooks/usePullToRefresh';
 import { useAuth } from '@context/AuthContext';
-import { fetchParentLinks, type ApiParentLink } from '@services/api';
+import { fetchGuardianLinks, type ApiGuardianLink } from '@services/api';
 
 const progressBars = [
   { subject: 'Math', color: palette.success, value: 85 },
@@ -33,7 +33,7 @@ const progressBars = [
   { subject: 'English', color: palette.danger, value: 58 },
 ];
 
-type ParentTile = {
+type GuardianTile = {
   key: string;
   title: string;
   subtitle: string;
@@ -41,41 +41,41 @@ type ParentTile = {
   navigateTo: keyof RootStackParamList;
 };
 
-const parentTiles: ParentTile[] = [
+const GuardianTiles: GuardianTile[] = [
   {
     key: 'progress',
     title: 'Progress',
     subtitle: 'Color bars and attendance toggles.',
     icon: 'ribbon',
-    navigateTo: 'ParentProgress',
+    navigateTo: 'GuardianProgress',
   },
   {
     key: 'fees',
     title: 'Fees',
     subtitle: 'Balances, plans, and quick payments.',
     icon: 'cash',
-    navigateTo: 'ParentFees',
+    navigateTo: 'GuardianFees',
   },
   {
     key: 'messages',
     title: 'Messages',
     subtitle: 'Threads with teachers and admin.',
     icon: 'chatbubble',
-    navigateTo: 'ParentMessages',
+    navigateTo: 'GuardianMessages',
   },
   {
     key: 'timetable',
     title: 'Timetable',
     subtitle: 'Listen to today or plan the week.',
     icon: 'time',
-    navigateTo: 'ParentTimetable',
+    navigateTo: 'GuardianTimetable',
   },
   {
     key: 'announcements',
     title: 'Announcements',
     subtitle: 'School notices with audio playback.',
     icon: 'megaphone',
-    navigateTo: 'ParentAnnouncements',
+    navigateTo: 'GuardianAnnouncements',
   },
   {
     key: 'rewards',
@@ -86,26 +86,26 @@ const parentTiles: ParentTile[] = [
   },
 ];
 
-export const ParentDashboardScreen: React.FC = () => {
+export const GuardianDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { refreshing, onRefresh } = usePullToRefresh();
   const [showAssistant, setShowAssistant] = useState(false);
   const { state } = useAuth();
-  const [links, setLinks] = useState<ApiParentLink[]>([]);
+  const [links, setLinks] = useState<ApiGuardianLink[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
   const loadLinks = useCallback(async () => {
-    if (state.user?.role !== 'parent' || !state.accessToken) {
+    if (state.user?.role !== 'Guardian' || !state.accessToken) {
       return;
     }
     try {
       setLoadingLinks(true);
-      const data = await fetchParentLinks(state.accessToken);
+      const data = await fetchGuardianLinks(state.accessToken);
       setLinks(data);
       setLinkError(null);
     } catch (error: any) {
-      console.warn('Failed to load parent links', error);
+      console.warn('Failed to load Guardian links', error);
       setLinkError(error?.message ?? 'Unable to load linked students.');
     } finally {
       setLoadingLinks(false);
@@ -116,7 +116,7 @@ export const ParentDashboardScreen: React.FC = () => {
     loadLinks();
   }, [loadLinks]);
 
-  const parentName = state.user?.display_name?.trim() || state.user?.username || 'Parent';
+  const GuardianName = state.user?.display_name?.trim() || state.user?.username || 'Guardian';
 
   return (
     <View style={styles.container}>
@@ -130,12 +130,12 @@ export const ParentDashboardScreen: React.FC = () => {
           />
         }
       >
-        <GreetingHeader name={parentName} rightAccessory={<NotificationBell />} />
+        <GreetingHeader name={GuardianName} rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
           onPress={() => navigation.navigate('Search')}
           onVoicePress={() => navigation.navigate('Search')}
         />
-        {state.user?.role === 'parent' ? (
+        {state.user?.role === 'Guardian' ? (
           <View style={styles.childCard}>
             <Text style={styles.childCardTitle}>Student on file</Text>
             {loadingLinks ? (
@@ -178,7 +178,7 @@ export const ParentDashboardScreen: React.FC = () => {
             </View>
           ))}
         </View>
-        {parentTiles.map((tile) => (
+        {GuardianTiles.map((tile) => (
           <DashboardTile
             key={tile.key}
             title={tile.title}
@@ -188,7 +188,7 @@ export const ParentDashboardScreen: React.FC = () => {
           />
         ))}
       </ScrollView>
-      <VoiceButton label='Speak summary' onPress={() => navigation.navigate('ParentProgress')} />
+      <VoiceButton label='Speak summary' onPress={() => navigation.navigate('GuardianProgress')} />
       <FloatingAssistantButton label='Chat' onPress={() => setShowAssistant(true)} />
       <BottomUtilityBar
         items={[
@@ -277,3 +277,4 @@ const styles = StyleSheet.create({
     ...typography.helper,
   },
 });
+

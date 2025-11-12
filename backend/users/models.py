@@ -132,3 +132,33 @@ class UserProvisionRequest(TimeStampedModel):
 
     def __str__(self):
         return f"{self.username} ({self.role}) - {self.status}"
+
+
+class FamilyEnrollmentIntent(TimeStampedModel):
+    student_request = models.OneToOneField(
+        UserProvisionRequest,
+        related_name="family_intent_student",
+        on_delete=models.CASCADE,
+    )
+    parent_request = models.OneToOneField(
+        UserProvisionRequest,
+        related_name="family_intent_parent",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    relationship = models.CharField(max_length=50, blank=True)
+    course_codes = models.JSONField(default=list, blank=True)
+    student_first_name = models.CharField(max_length=150, blank=True)
+    student_last_name = models.CharField(max_length=150, blank=True)
+    student_password = models.CharField(max_length=128, blank=True)
+    parent_first_name = models.CharField(max_length=150, blank=True)
+    parent_last_name = models.CharField(max_length=150, blank=True)
+    parent_password = models.CharField(max_length=128, blank=True)
+    fee_title = models.CharField(max_length=255, blank=True)
+    fee_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    fee_due_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        parent = self.parent_request.username if self.parent_request else "N/A"
+        return f"Family intent: student={self.student_request.username}, parent={parent}"

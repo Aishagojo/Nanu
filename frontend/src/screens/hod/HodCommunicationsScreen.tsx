@@ -6,13 +6,13 @@ import { VoiceButton } from '@components/index';
 
 const groups = [
   { name: 'All Lecturers', members: 12 },
-  { name: 'Parents - ICT201', members: 24 },
+  { name: 'Guardians - ICT201', members: 24 },
 ];
 
 export const HodCommunicationsScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
     <Text style={styles.title}>Broadcast Communications</Text>
-    <Text style={styles.subtitle}>Send announcements to lecturers or parent cohorts.</Text>
+    <Text style={styles.subtitle}>Send announcements to lecturers or guardian cohorts.</Text>
     {groups.map((group) => (
       <View key={group.name} style={styles.card}>
         <Ionicons name='mail' size={28} color={palette.primary} />

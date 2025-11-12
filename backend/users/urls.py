@@ -14,6 +14,7 @@ from .views import (
     totp_disable,
     assign_role,
     provision_user,
+    enroll_family,
 )
 
 router = DefaultRouter()
@@ -31,4 +32,5 @@ urlpatterns = router.urls + [
     path("totp/disable/", totp_disable, name="users-totp-disable"),
     path("assign-role/", assign_role, name="users-assign-role"),
     path("provision/", provision_user, name="users-provision"),
+    path("enroll-family/", enroll_family, name="users-enroll-family"),
 ]

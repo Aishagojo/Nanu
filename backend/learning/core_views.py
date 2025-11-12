@@ -205,8 +205,25 @@ class QuickEnrollmentView(APIView):
         serializer = EnrollmentSerializer(
             data={"student": student.id, "course": course.id, "active": True}
         )
-        serializer.is_valid(raise_exception=True)
-        enrollment = serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            enrollment = serializer.save()
+        except ValidationError as exc:
+            detail = exc.detail
+            if isinstance(detail, dict):
+                message = detail.get("detail")
+                non_field = detail.get("non_field_errors")
+                if non_field:
+                    # Already enrolled – make the message explicit
+                    raise ValidationError(
+                        {
+                            "detail": f"{student.display_name or student.username} is already enrolled in {course.code}.",
+                            "code": "already_enrolled",
+                        }
+                    ) from exc
+                if message:
+                    raise ValidationError(detail) from exc
+            raise
         return Response(
             {
                 "detail": "Student enrolled successfully.",

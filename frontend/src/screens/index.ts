@@ -4,7 +4,7 @@ export * from './auth/ForcePasswordChangeScreen';
 export * from './auth/PasswordResetConfirmScreen';
 
 export * from './dashboard/StudentDashboardScreen';
-export * from './dashboard/ParentDashboardScreen';
+export * from './dashboard/GuardianDashboardScreen';
 export * from './dashboard/LecturerDashboardScreen';
 export * from './dashboard/HodDashboardScreen';
 export * from './dashboard/FinanceDashboardScreen';
@@ -28,11 +28,11 @@ export * from './lecturer/LecturerTimetableScreen';
 export * from './lecturer/LecturerClassesScreen';
 export * from './lecturer/LecturerRecordsScreen';
 
-export * from './parent/ParentProgressScreen';
-export * from './parent/ParentFeesScreen';
-export * from './parent/ParentMessagesScreen';
-export * from './parent/ParentTimetableScreen';
-export * from './parent/ParentAnnouncementsScreen';
+export * from './guardian/GuardianProgressScreen';
+export * from './guardian/GuardianFeesScreen';
+export * from './guardian/GuardianMessagesScreen';
+export * from './guardian/GuardianTimetableScreen';
+export * from './guardian/GuardianAnnouncementsScreen';
 
 export * from './finance/FinanceOverviewScreen';
 export * from './finance/FinanceStudentsScreen';
@@ -45,6 +45,7 @@ export * from './hod/HodTimetableScreen';
 export * from './hod/HodPerformanceScreen';
 export * from './hod/HodCommunicationsScreen';
 export * from './hod/HodReportsScreen';
+export { default as LecturerManagementScreen } from './hod/LecturerManagementScreen';
 
 export * from './records/RecordsExamsScreen';
 export * from './records/RecordsTranscriptsScreen';

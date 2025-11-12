@@ -4,31 +4,35 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
-const subjects = [
-  { name: 'Mathematics', score: 85, attendance: '92% present' },
-  { name: 'Science', score: 72, attendance: '88% present' },
-  { name: 'Creative Arts', score: 94, attendance: '100% present' },
+const fees = [
+  {
+    item: 'Tuition Term 1',
+    due: 'KES 12,000',
+    status: 'Balance KES 4,000',
+    color: palette.warning,
+  },
+  { item: 'Therapy Sessions', due: 'KES 6,500', status: 'Paid', color: palette.success },
 ];
 
-export const ParentProgressScreen: React.FC = () => (
+export const GuardianFeesScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Progress Overview</Text>
+    <Text style={styles.title}>Fees & Payments</Text>
     <Text style={styles.subtitle}>
-      Tap a subject to hear voice summaries or share updates with teachers.
+      Easily see balances, track payment plans, and set reminders.
     </Text>
-    {subjects.map((subject) => (
-      <View key={subject.name} style={styles.card}>
-        <Ionicons name='ribbon' size={28} color={palette.success} />
+    {fees.map((fee) => (
+      <View key={fee.item} style={styles.card}>
+        <Ionicons name='cash' size={28} color={fee.color} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{subject.name}</Text>
+          <Text style={styles.cardTitle}>{fee.item}</Text>
           <Text style={styles.cardMeta}>
-            Score {subject.score}% � {subject.attendance}
+            {fee.due} - {fee.status}
           </Text>
-          <VoiceButton label='See details' onPress={() => {}} />
+          <VoiceButton label='Pay or request plan' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label='Speak summary' onPress={() => {}} />
+    <VoiceButton label='Download fee statement' onPress={() => {}} />
   </ScrollView>
 );
 

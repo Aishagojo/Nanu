@@ -20,7 +20,7 @@ export type AppRoute = {
 
 const THREAD_ROUTES: Partial<Record<Role, AppRoute>> = {
   student: { name: 'StudentCommunicate' },
-  parent: { name: 'ParentMessages' },
+  parent: { name: 'GuardianMessages' },
   lecturer: { name: 'LecturerMessages' },
   admin: { name: 'AdminUsers' },
   hod: { name: 'HodCommunications' },
@@ -30,7 +30,7 @@ const THREAD_ROUTES: Partial<Record<Role, AppRoute>> = {
 
 const RESOURCE_ROUTES: Partial<Record<Role, AppRoute>> = {
   student: { name: 'StudentLibrary' },
-  parent: { name: 'ParentAnnouncements' },
+  parent: { name: 'GuardianAnnouncements' },
   lecturer: { name: 'LecturerRecords' },
   admin: { name: 'AdminSystems' },
 };
@@ -311,11 +311,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 
   useEffect(() => {
-    if (!user || !token) {
+    // Don't start polling until we have both user and token
+    if (!user || !token || !threadsInitialized) {
       return;
     }
 
     let cancelled = false;
+    let retryTimeout: NodeJS.Timeout;
 
     const poll = async () => {
       const role = user.role as Role;
@@ -326,8 +328,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           if (!cancelled) {
             ingestThreads(data, threadRoute);
           }
-        } catch (error) {
+        } catch (error: any) {
+          if (error?.status === 401) {
+            // Stop polling on authentication error
+            console.log('Authentication required for notifications');
+            return;
+          }
           console.warn('Notification thread preload failed', error);
+          // Retry after a delay on other errors
+          if (!cancelled) {
+            retryTimeout = setTimeout(poll, 30000);
+          }
         }
       }
       const resourceRoute = RESOURCE_ROUTES[role];
@@ -348,8 +359,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
     };
-  }, [ingestResources, ingestThreads, token, user]);
+  }, [ingestResources, ingestThreads, token, user, threadsInitialized]);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) =>

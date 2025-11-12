@@ -10,6 +10,8 @@ from .goals_models import LearningGoal, LearningMilestone, LearningSupport, Goal
 
 
 class Course(TimeStampedModel):
+    MAX_COURSES_PER_LECTURER = 4
+
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -36,12 +38,30 @@ class Course(TimeStampedModel):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+    def clean(self):
+        super().clean()
+        if self.lecturer_id:
+            active_courses = (
+                Course.objects.exclude(pk=self.pk)
+                .filter(lecturer_id=self.lecturer_id)
+                .exclude(status='archived')
+                .count()
+            )
+            if active_courses >= self.MAX_COURSES_PER_LECTURER:
+                raise ValidationError(
+                    f"Lecturers can only be assigned to {self.MAX_COURSES_PER_LECTURER} courses."
+                )
+
     class Meta:
         ordering = ['code']
         permissions = [
             ('approve_course', 'Can approve course'),
             ('assign_lecturer', 'Can assign lecturer to course'),
         ]
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class Unit(TimeStampedModel):
@@ -99,4 +119,3 @@ class AttendanceEvent(TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
-

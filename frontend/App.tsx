@@ -1,5 +1,5 @@
 import React from "react";
-import { StatusBar, StyleSheet } from "react-native";
+import { StatusBar, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { AppNavigator } from "@navigation/AppNavigator";
 import { palette } from "@theme/index";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,7 +15,13 @@ const App = () => {
           <NotificationProvider>
             <StatusBar barStyle="dark-content" backgroundColor={palette.background} />
             <SafeAreaView style={styles.safeArea}>
-              <AppNavigator />
+              <KeyboardAvoidingView
+                style={styles.keyboardWrapper}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 16 : 0}
+              >
+                <AppNavigator />
+              </KeyboardAvoidingView>
             </SafeAreaView>
           </NotificationProvider>
         </AuthProvider>
@@ -32,6 +38,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: palette.background,
+  },
+  keyboardWrapper: {
+    flex: 1,
   },
 });
 

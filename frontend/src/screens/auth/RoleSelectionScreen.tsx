@@ -20,7 +20,7 @@ type RoleOption = {
 
 const roles: RoleOption[] = [
   { key: 'student', title: 'Student', subtitle: 'Access timetable, assignments, and help' },
-  { key: 'parent', title: 'Parent', subtitle: 'Track progress, fees, and messages' },
+  { key: 'parent', title: 'Guardian', subtitle: 'Track progress, fees, and messages' },
   { key: 'lecturer', title: 'Lecturer', subtitle: 'Manage classes, assignments, communication' },
   { key: 'hod', title: 'Head of Department', subtitle: 'Assign courses, view performance' },
   { key: 'finance', title: 'Finance Officer', subtitle: 'Manage fees, receipts, and alerts' },

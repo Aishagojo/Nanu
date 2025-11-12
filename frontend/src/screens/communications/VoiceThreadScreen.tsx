@@ -7,24 +7,7 @@ import { NotificationBell, VoiceButton } from '@components/index';
 import { createMessage, fetchThreads, transcribeAudio, type ApiMessage, type ApiThread } from '@services/api';
 import { useAuth } from '@context/AuthContext';
 import { useNotifications, type AppRoute } from '@context/NotificationContext';
-
-const baseRecordingPreset = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-
-const recordingOptions: Audio.RecordingOptions = {
-  ...baseRecordingPreset,
-  android: {
-    ...baseRecordingPreset.android,
-    numberOfChannels: 1,
-  },
-  ios: {
-    ...baseRecordingPreset.ios,
-    numberOfChannels: 1,
-  },
-  web: {
-    mimeType: 'audio/mp4',
-    bitsPerSecond: 128000,
-  },
-};
+import { useVoiceRecorder } from '@hooks/useVoiceRecorder';
 
 type RecordingState = 'idle' | 'recording' | 'processing' | 'uploading';
 
@@ -124,15 +107,35 @@ export const VoiceThreadScreen: React.FC<VoiceThreadScreenProps> = ({
   const [threadError, setThreadError] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
 
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [recordingMime, setRecordingMime] = useState('audio/m4a');
   const [transcript, setTranscript] = useState<string>('');
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
-  const [permissionResponse, requestPermission] = Audio.usePermissions();
 
+  const recorder = useVoiceRecorder({
+    overrides: {
+      android: {
+        extension: '.m4a',
+        outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+        audioEncoder: Audio.AndroidAudioEncoder.AAC,
+        numberOfChannels: 1,
+      },
+      ios: {
+        extension: '.m4a',
+        audioQuality: Audio.IOSAudioQuality.HIGH,
+        sampleRate: 44100,
+        numberOfChannels: 1,
+        bitRate: 128000,
+        linearPCMBitDepth: 16,
+        linearPCMIsBigEndian: false,
+        linearPCMIsFloat: false,
+      },
+      web: { mimeType: 'audio/mp4', bitsPerSecond: 128000 },
+    },
+  });
+
+  const player = useRef<Audio.Sound | null>(null);
   const [activePlaybackId, setActivePlaybackId] = useState<number | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
 const selectedThread = useMemo(
   () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -182,45 +185,25 @@ const selectedThread = useMemo(
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
+      if (player.current) {
+        player.current.unloadAsync().catch(() => {});
       }
     };
   }, []);
-
-  const ensurePermissions = useCallback(async () => {
-    if (permissionResponse?.granted) {
-      return true;
-    }
-    const response = await requestPermission();
-    if (!response?.granted) {
-      Alert.alert('Microphone blocked', 'Enable microphone access to record a voice note.');
-      return false;
-    }
-    return true;
-  }, [permissionResponse?.granted, requestPermission]);
 
   const startRecording = useCallback(async () => {
     if (recordingState === 'recording') {
       return;
     }
-    const ok = await ensurePermissions();
-    if (!ok) {
-      return;
-    }
 
     try {
       setRecordingState('recording');
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-      });
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(recordingOptions);
-      await newRecording.startAsync();
-      setRecording(newRecording);
+      const success = await recorder.start();
+      if (!success) {
+        setRecordingState('idle');
+        Alert.alert('Microphone blocked', 'Enable microphone access to record a voice note.');
+        return;
+      }
       setRecordingUri(null);
       setTranscript('');
     } catch (error: any) {
@@ -228,21 +211,20 @@ const selectedThread = useMemo(
       Alert.alert('Recording error', error?.message ?? 'Unable to start microphone.');
       setRecordingState('idle');
     }
-  }, [ensurePermissions, recordingState]);
+  }, [recorder, recordingState]);
 
   const stopRecording = useCallback(async () => {
-    if (!recording) {
+    if (!recorder.isRecording) {
       return;
     }
     try {
       setRecordingState('processing');
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      const uri = await recorder.stop();
       if (!uri) {
         throw new Error('No recording file produced.');
       }
       setRecordingUri(uri);
-      const mimeType = recordingOptions.android?.extension === '.m4a' ? 'audio/m4a' : 'audio/mp4';
+      const mimeType = 'audio/m4a';
       setRecordingMime(mimeType);
       if (token && selectedThread) {
         try {
@@ -260,10 +242,8 @@ const selectedThread = useMemo(
       setTranscript('');
     } finally {
       setRecordingState('idle');
-      setRecording(null);
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
     }
-  }, [recording, selectedThread, token]);
+  }, [recorder, selectedThread, token]);
 
   const handleRecordPress = useCallback(async () => {
     if (recordingState === 'recording') {
@@ -276,23 +256,25 @@ const selectedThread = useMemo(
   const handlePlayMessage = useCallback(
     async (message: ApiMessage) => {
       if (!message.audio) { return; }
-      if (activePlaybackId === message.id && soundRef.current) {
-        await soundRef.current.stopAsync().catch(() => {});
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-        setActivePlaybackId(null);
-        return;
-      }
 
-      if (soundRef.current) {
-        await soundRef.current.stopAsync().catch(() => {});
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
+      // Stop any currently playing message
+      if (player.current) {
+        if (activePlaybackId === message.id) {
+          await player.current.stopAsync().catch(() => {});
+          await player.current.unloadAsync().catch(() => {});
+          player.current = null;
+          setActivePlaybackId(null);
+          return;
+        }
+        await player.current.stopAsync().catch(() => {});
+        await player.current.unloadAsync().catch(() => {});
+        player.current = null;
+        setActivePlaybackId(null);
       }
 
       try {
         const { sound } = await Audio.Sound.createAsync({ uri: message.audio });
-        soundRef.current = sound;
+        player.current = sound;
         setActivePlaybackId(message.id);
         await sound.playAsync();
         sound.setOnPlaybackStatusUpdate((status) => {
@@ -300,7 +282,7 @@ const selectedThread = useMemo(
           if (status.didJustFinish) {
             setActivePlaybackId(null);
             sound.unloadAsync().catch(() => {});
-            soundRef.current = null;
+            player.current = null;
           }
         });
       } catch (error: any) {

@@ -38,7 +38,7 @@ export type ApiUser = {
   totp_enabled?: boolean;
 };
 
-export type ApiParentLink = {
+export type ApiGuardianLink = {
   id: number;
   parent: number;
   student: number;
@@ -105,6 +105,29 @@ export type ApiResource = {
   course_code?: string | null;
 };
 
+export type ApiPayment = {
+  id: number;
+  fee_item: number;
+  amount: string;
+  method: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ApiFeeItem = {
+  id: number;
+  student: number;
+  title: string;
+  amount: string;
+  paid: string;
+  balance: string;
+  status: string;
+  due_date: string | null;
+  payments: ApiPayment[];
+  created_at: string;
+  updated_at: string;
+};
+
 type LoginResponse = TokenResponse & {
   user?: ApiUser;
 };
@@ -152,6 +175,58 @@ export const endpoints = {
   assignRole: () => `${API_BASE}/api/users/assign-role/`,
   transcribe: () => `${API_BASE}/api/core/transcribe/`,
   resources: () => `${API_BASE}/api/repository/resources/`,
+  familyEnroll: () => `${API_BASE}/api/users/enroll-family/`,
+};
+
+type ApiError = Error & { status?: number; details?: unknown };
+
+const extractErrorMessage = (data: unknown): string | null => {
+  if (!data) {
+    return null;
+  }
+  if (typeof data === 'string') {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    const first = data.find((item) => item !== undefined && item !== null);
+    return first ? extractErrorMessage(first) : null;
+  }
+  if (typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    if (typeof record.detail === 'string') {
+      return record.detail;
+    }
+    const firstKey = Object.keys(record)[0];
+    if (firstKey) {
+      return extractErrorMessage(record[firstKey]);
+    }
+  }
+  return null;
+};
+
+const buildApiError = async (response: Response): Promise<ApiError> => {
+  let text: string | null = null;
+  let details: unknown = null;
+  try {
+    text = await response.text();
+    if (text) {
+      try {
+        details = JSON.parse(text);
+      } catch {
+        details = text;
+      }
+    }
+  } catch {
+    text = null;
+  }
+  const message =
+    extractErrorMessage(details ?? text) ||
+    text ||
+    `Request failed with status ${response.status}`;
+  const error: ApiError = new Error(message);
+  error.status = response.status;
+  error.details = details;
+  return error;
 };
 
 export const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
@@ -164,8 +239,7 @@ export const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || response.statusText);
+    throw await buildApiError(response);
   }
 
   return response.json();
@@ -249,8 +323,7 @@ const authedPost = async <T>(
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || response.statusText);
+    throw await buildApiError(response);
   }
   return response.json();
 };
@@ -331,8 +404,8 @@ export const fetchCourses = (
 
 export const fetchUsers = (token: string) => fetchJson<ApiUser[]>(endpoints.usersList(), token);
 
-export const fetchParentLinks = (token: string) =>
-  fetchJson<ApiParentLink[]>(endpoints.parentLinks(), token);
+export const fetchGuardianLinks = (token: string) =>
+  fetchJson<ApiGuardianLink[]>(endpoints.parentLinks(), token);
 
 export const fetchProvisionRequests = (token: string) =>
   fetchJson<ApiProvisionRequest[]>(endpoints.provisionRequests(), token);
@@ -353,15 +426,15 @@ export type CreateUserPayload = {
 export const provisionUser = (token: string, payload: CreateUserPayload) =>
   authedPost<ApiUser>(endpoints.provisionUser(), token, payload);
 
-export type ParentLinkPayload = {
+export type GuardianLinkPayload = {
   parent: number;
   student: number;
   relationship?: string;
   records_passcode: string;
 };
 
-export const createParentLink = (token: string, payload: ParentLinkPayload) =>
-  authedPost<ApiParentLink>(endpoints.parentLinks(), token, payload);
+export const createGuardianLink = (token: string, payload: GuardianLinkPayload) =>
+  authedPost<ApiGuardianLink>(endpoints.parentLinks(), token, payload);
 
 export type ProvisionRequestPayload = {
   username: string;
@@ -381,8 +454,45 @@ export type QuickEnrollPayload = {
   course_code?: string;
 };
 
+export type FamilyEnrollPayload = {
+  records_passcode: string;
+  student: {
+    username: string;
+    password: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    course_codes?: string[];
+    course_ids?: number[];
+  };
+  parent: {
+    username: string;
+    password: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  };
+  relationship?: string;
+  fee_item?: {
+    title?: string;
+    amount: number;
+    due_date?: string;
+  };
+};
+
+export type FamilyEnrollResponse = {
+  detail: string;
+  student_request: ApiProvisionRequest;
+  parent_request?: ApiProvisionRequest;
+};
+
 export const quickEnrollStudent = (token: string, payload: QuickEnrollPayload) =>
   authedPost<{ detail: string }>(endpoints.quickEnroll(), token, payload);
+
+export const enrollFamily = (token: string, payload: FamilyEnrollPayload) =>
+  authedPost<FamilyEnrollResponse>(endpoints.familyEnroll(), token, payload);
 
 export const approveProvisionRequest = (token: string, requestId: number) =>
   authedPost<{ user: ApiUser; temporary_password: string }>(

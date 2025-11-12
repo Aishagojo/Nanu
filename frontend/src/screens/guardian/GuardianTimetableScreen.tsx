@@ -4,35 +4,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
-const fees = [
-  {
-    item: 'Tuition Term 1',
-    due: 'KES 12,000',
-    status: 'Balance KES 4,000',
-    color: palette.warning,
-  },
-  { item: 'Therapy Sessions', due: 'KES 6,500', status: 'Paid', color: palette.success },
+const timetable = [
+  { time: '08:00', activity: 'Math lesson', location: 'Room B204' },
+  { time: '10:00', activity: 'Science Lab', location: 'Lab 1' },
+  { time: '14:00', activity: 'Therapy session', location: 'Wellness Center' },
 ];
 
-export const ParentFeesScreen: React.FC = () => (
+export const GuardianTimetableScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Fees & Payments</Text>
-    <Text style={styles.subtitle}>
-      Easily see balances, track payment plans, and set reminders.
-    </Text>
-    {fees.map((fee) => (
-      <View key={fee.item} style={styles.card}>
-        <Ionicons name='cash' size={28} color={fee.color} />
+    <Text style={styles.title}>Child&apos;s Timetable</Text>
+    <Text style={styles.subtitle}>Follow the day and set spoken reminders 15 minutes ahead.</Text>
+    {timetable.map((slot) => (
+      <View key={slot.activity} style={styles.card}>
+        <Ionicons name='time' size={28} color={palette.secondary} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{fee.item}</Text>
+          <Text style={styles.cardTitle}>{slot.activity}</Text>
           <Text style={styles.cardMeta}>
-            {fee.due} � {fee.status}
+            {slot.time} - {slot.location}
           </Text>
-          <VoiceButton label='Pay or request plan' onPress={() => {}} />
+          <VoiceButton label='Set reminder' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label='Download fee statement' onPress={() => {}} />
+    <VoiceButton label='Speak timetable' onPress={() => {}} />
   </ScrollView>
 );
 

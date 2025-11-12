@@ -1,4 +1,4 @@
-/* eslint jsx-quotes: "off" */
+﻿/* eslint jsx-quotes: "off" */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +13,8 @@ import {
 import { VoiceButton } from '@components/index';
 import { palette, spacing, typography } from '@theme/index';
 import { useAuth } from '@context/AuthContext';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '@navigation/AppNavigator';
 import {
   assignCourse,
   createCourse,
@@ -31,10 +33,12 @@ type Department = { id: number; name: string; code: string };
 
 const LecturerManagementScreen: React.FC = () => {
   const { state } = useAuth();
+  const route = useRoute<RouteProp<RootStackParamList, 'LecturerManagement'>>();
+  const routeDeptId = route.params?.departmentId ?? null;
   const token = state.accessToken;
 
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(routeDeptId);
   const [lecturers, setLecturers] = useState<Lecturer[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<DepartmentStudent[]>([]);
@@ -101,7 +105,15 @@ const [newCourseForm, setNewCourseForm] = useState<{
         const deptList = await fetchDepartments(token);
         setDepartments(deptList);
         if (deptList.length > 0) {
-          setSelectedDeptId((prev) => prev ?? deptList[0].id);
+          setSelectedDeptId((prev) => {
+            if (prev) {
+              return prev;
+            }
+            if (routeDeptId && deptList.some((dept) => dept.id === routeDeptId)) {
+              return routeDeptId;
+            }
+            return deptList[0].id;
+          });
         }
       } catch (err: any) {
         console.error('Failed to load departments', err);
@@ -111,7 +123,16 @@ const [newCourseForm, setNewCourseForm] = useState<{
       }
     };
     load();
-  }, [token]);
+  }, [routeDeptId, token]);
+
+  useEffect(() => {
+    if (!routeDeptId || !departments.length) {
+      return;
+    }
+    if (departments.some((dept) => dept.id === routeDeptId) && selectedDeptId !== routeDeptId) {
+      setSelectedDeptId(routeDeptId);
+    }
+  }, [departments, routeDeptId, selectedDeptId]);
 
   useEffect(() => {
     if (!token || !selectedDeptId) {
@@ -154,6 +175,31 @@ const [newCourseForm, setNewCourseForm] = useState<{
     );
   }, [courses, normalizedSearch]);
 
+  const { assignedCourses, unassignedCourses } = useMemo(() => {
+    const assigned: Course[] = [];
+    const unassigned: Course[] = [];
+    filteredCourses.forEach((course) => {
+      if (course.lecturer_id) {
+        assigned.push(course);
+      } else {
+        unassigned.push(course);
+      }
+    });
+    assigned.sort((a, b) => a.code.localeCompare(b.code));
+    unassigned.sort((a, b) => a.code.localeCompare(b.code));
+    return { assignedCourses: assigned, unassignedCourses: unassigned };
+  }, [filteredCourses]);
+
+  const courseSummary = useMemo(() => {
+    const assignedCount = courses.filter((course) => !!course.lecturer_id).length;
+    const total = courses.length;
+    return {
+      total,
+      assigned: assignedCount,
+      unassigned: total - assignedCount,
+    };
+  }, [courses]);
+
   const availableStudents = useMemo(() => {
     if (!managingStudentsCourseId) {
       return students;
@@ -163,7 +209,14 @@ const [newCourseForm, setNewCourseForm] = useState<{
 
   const startAssigning = (course: Course) => {
     setAssigningCourseId(course.id);
-    setSelectedLecturerId(course.lecturer_id ?? null);
+    const suggestedLecturerId =
+      course.lecturer_id ??
+      lecturers.find(
+        (lecturer) =>
+          lecturer.remaining_capacity === undefined || lecturer.remaining_capacity > 0,
+      )?.id ??
+      null;
+    setSelectedLecturerId(suggestedLecturerId);
     setManagingStudentsCourseId(null);
   };
 
@@ -338,14 +391,30 @@ const toggleCreateCourse = () => {
     const isAssigning = assigningCourseId === course.id;
     const isManaging = managingStudentsCourseId === course.id;
     const courseStudents = course.students ?? [];
+    const isAssigned = Boolean(course.lecturer_id);
+    const statusLabel = (course.status || (isAssigned ? 'assigned' : 'awaiting lecturer')).toUpperCase();
+    const primaryActionLabel = isAssigned ? 'Change lecturer' : 'Assign lecturer';
+    const primaryActionHint = isAssigned
+      ? 'Switch this course to a different lecturer'
+      : 'Assign a lecturer to this course';
+    const saveLabel = actionLoading
+      ? 'Saving...'
+      : isAssigned
+      ? 'Update lecturer'
+      : 'Assign lecturer';
 
     return (
       <View key={course.id} style={styles.courseCard}>
         <View style={styles.courseHeader}>
-          <Text style={styles.courseTitle}>
-            {course.code} • {course.name}
+          <Text style={styles.courseTitle}>{`${course.code} - ${course.name}`}</Text>
+          <Text
+            style={[
+              styles.courseStatus,
+              isAssigned ? styles.courseStatusAssigned : styles.courseStatusPending,
+            ]}
+          >
+            {statusLabel}
           </Text>
-          <Text style={styles.courseStatus}>{course.status.toUpperCase()}</Text>
         </View>
         <Text style={styles.courseMeta}>
           Lecturer:{' '}
@@ -357,7 +426,7 @@ const toggleCreateCourse = () => {
 
         {isAssigning ? (
           <View style={styles.selectorCard}>
-            <Text style={styles.selectorTitle}>Select lecturer</Text>
+            <Text style={styles.selectorTitle}>Select lecturer for {course.code}</Text>
             <ScrollView style={styles.selectorList}>
               {lecturers.map((lecturer) => {
                 const selected = selectedLecturerId === lecturer.id;
@@ -390,19 +459,26 @@ const toggleCreateCourse = () => {
                 accessibilityHint='Dismiss lecturer selection'
               />
               <VoiceButton
-                label={actionLoading ? 'Saving...' : 'Assign lecturer'}
-                onPress={handleAssignLecturer}
+                label={saveLabel}
                 isActive={!actionLoading}
-                accessibilityHint='Assign selected lecturer to this course'
+                onPress={handleAssignLecturer}
+                accessibilityHint='Confirm lecturer for this course'
               />
             </View>
           </View>
         ) : (
-          <VoiceButton
-            label='Assign / change lecturer'
-            accessibilityHint='Assign a lecturer to this course'
-            onPress={() => startAssigning(course)}
-          />
+          <>
+            <VoiceButton
+              label={primaryActionLabel}
+              accessibilityHint={primaryActionHint}
+              onPress={() => startAssigning(course)}
+            />
+            {!isAssigning && !isAssigned ? (
+              <Text style={styles.helper}>
+                No lecturer assigned yet. Tap the button above to assign.
+              </Text>
+            ) : null}
+          </>
         )}
 
         <View style={styles.studentSection}>
@@ -510,6 +586,21 @@ const toggleCreateCourse = () => {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {loading ? <ActivityIndicator color={palette.primary} /> : null}
+
+        <View style={styles.summaryRow}>
+          <View style={[styles.summaryCard, styles.summaryCardPrimary]}>
+            <Text style={styles.summaryLabel}>Total courses</Text>
+            <Text style={styles.summaryValue}>{courseSummary.total}</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Assigned</Text>
+            <Text style={styles.summaryValue}>{courseSummary.assigned}</Text>
+          </View>
+          <View style={[styles.summaryCard, styles.summaryCardPending]}>
+            <Text style={styles.summaryLabel}>Awaiting lecturer</Text>
+            <Text style={styles.summaryValue}>{courseSummary.unassigned}</Text>
+          </View>
+        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Lecturers</Text>
@@ -651,7 +742,28 @@ const toggleCreateCourse = () => {
         ) : null}
 
         {filteredCourses.length ? (
-          filteredCourses.map(renderCourseCard)
+          <View style={styles.courseBuckets}>
+            <View style={styles.bucketSection}>
+              <Text style={styles.sectionSubtitle}>
+                Awaiting lecturer ({unassignedCourses.length})
+              </Text>
+              {unassignedCourses.length ? (
+                unassignedCourses.map(renderCourseCard)
+              ) : (
+                <Text style={styles.helper}>All courses currently have lecturers assigned.</Text>
+              )}
+            </View>
+            <View style={styles.bucketSection}>
+              <Text style={[styles.sectionSubtitle, styles.sectionSubtitleSpacing]}>
+                Assigned courses ({assignedCourses.length})
+              </Text>
+              {assignedCourses.length ? (
+                assignedCourses.map(renderCourseCard)
+              ) : (
+                <Text style={styles.helper}>No courses assigned to lecturers yet.</Text>
+              )}
+            </View>
+          </View>
         ) : (
           <Text style={styles.helper}>
             {departments.length
@@ -700,6 +812,38 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     color: palette.textPrimary,
   },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  summaryCard: {
+    flexGrow: 1,
+    minWidth: 120,
+    backgroundColor: palette.surface,
+    borderRadius: spacing.lg,
+    padding: spacing.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 2,
+    gap: spacing.xs,
+  },
+  summaryCardPrimary: {
+    backgroundColor: '#E5EDFF',
+  },
+  summaryCardPending: {
+    backgroundColor: '#FFF4E5',
+  },
+  summaryLabel: {
+    ...typography.helper,
+    color: palette.textSecondary,
+  },
+  summaryValue: {
+    ...typography.headingL,
+    color: palette.textPrimary,
+  },
   deptRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -738,6 +882,9 @@ const styles = StyleSheet.create({
     ...typography.headingM,
     color: palette.textPrimary,
     marginBottom: spacing.sm,
+  },
+  sectionSubtitleSpacing: {
+    marginTop: spacing.lg,
   },
   error: {
     ...typography.body,
@@ -796,6 +943,12 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
+  courseBuckets: {
+    gap: spacing.xl,
+  },
+  bucketSection: {
+    gap: spacing.md,
+  },
   courseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -808,6 +961,12 @@ const styles = StyleSheet.create({
   courseStatus: {
     ...typography.helper,
     color: palette.primary,
+  },
+  courseStatusAssigned: {
+    color: palette.success,
+  },
+  courseStatusPending: {
+    color: palette.warning,
   },
   courseMeta: {
     ...typography.body,

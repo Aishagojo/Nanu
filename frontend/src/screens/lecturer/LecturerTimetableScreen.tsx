@@ -7,7 +7,7 @@ import { VoiceButton } from '@components/index';
 const week = [
   { day: 'Monday', slots: ['ICT201 08:00 - Room B302', 'Advisory 14:00 - Counseling Room'] },
   { day: 'Wednesday', slots: ['ICT305 10:00 - Innovation Lab', 'Team Workshop 15:00 - Online'] },
-  { day: 'Friday', slots: ['ICT201 09:00 - Room B302', 'Parent Consultations 13:30 - Online'] },
+  { day: 'Friday', slots: ['ICT201 09:00 - Room B302', 'Guardian Consultations 13:30 - Online'] },
 ];
 
 export const LecturerTimetableScreen: React.FC = () => (

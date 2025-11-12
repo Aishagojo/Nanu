@@ -5,7 +5,7 @@ import {
   RoleSelectionScreen,
   LoginScreen,
   StudentDashboardScreen,
-  ParentDashboardScreen,
+  GuardianDashboardScreen,
   LecturerDashboardScreen,
   HodDashboardScreen,
   FinanceDashboardScreen,
@@ -14,6 +14,7 @@ import {
   FeatureScreen,
   SearchScreen,
   ProfileScreen,
+  LecturerManagementScreen,
   ForcePasswordChangeScreen,
   PasswordResetConfirmScreen,
   StudentTimetableScreen,
@@ -26,11 +27,11 @@ import {
   LecturerMessagesScreen,
   LecturerRecordsScreen,
   LecturerTimetableScreen,
-  ParentProgressScreen,
-  ParentFeesScreen,
-  ParentMessagesScreen,
-  ParentTimetableScreen,
-  ParentAnnouncementsScreen,
+  GuardianProgressScreen,
+  GuardianFeesScreen,
+  GuardianMessagesScreen,
+  GuardianTimetableScreen,
+  GuardianAnnouncementsScreen,
   HodAssignmentsScreen,
   HodTimetableScreen,
   HodPerformanceScreen,
@@ -75,6 +76,7 @@ export type RootStackParamList = {
   LecturerClasses: undefined;
   LecturerAssignments: undefined;
   LecturerMessages: undefined;
+  LecturerManagement: { departmentId: number };
   LecturerRecords: undefined;
   LecturerTimetable: undefined;
   FinanceOverview: undefined;
@@ -82,11 +84,11 @@ export type RootStackParamList = {
   FinanceInvoices: undefined;
   FinanceAlerts: undefined;
   FinanceSettings: undefined;
-  ParentProgress: undefined;
-  ParentFees: undefined;
-  ParentMessages: undefined;
-  ParentTimetable: undefined;
-  ParentAnnouncements: undefined;
+  GuardianProgress: undefined;
+  GuardianFees: undefined;
+  GuardianMessages: undefined;
+  GuardianTimetable: undefined;
+  GuardianAnnouncements: undefined;
   HodAssignments: undefined;
   HodTimetable: undefined;
   HodPerformance: undefined;
@@ -113,7 +115,7 @@ const getDashboardComponent = (role: Role) => {
     case 'student':
       return StudentDashboardScreen;
     case 'parent':
-      return ParentDashboardScreen;
+      return GuardianDashboardScreen;
     case 'lecturer':
       return LecturerDashboardScreen;
     case 'hod':
@@ -182,6 +184,7 @@ export const AppNavigator = () => {
         <Stack.Screen name='LecturerClasses' component={LecturerClassesScreen} />
         <Stack.Screen name='LecturerAssignments' component={LecturerAssignmentsScreen} />
         <Stack.Screen name='LecturerMessages' component={LecturerMessagesScreen} />
+        <Stack.Screen name='LecturerManagement' component={LecturerManagementScreen} />
         <Stack.Screen name='LecturerRecords' component={LecturerRecordsScreen} />
         <Stack.Screen name='LecturerTimetable' component={LecturerTimetableScreen} />
         <Stack.Screen name='FinanceOverview' component={FinanceOverviewScreen} />
@@ -189,11 +192,11 @@ export const AppNavigator = () => {
         <Stack.Screen name='FinanceInvoices' component={FinanceInvoicesScreen} />
         <Stack.Screen name='FinanceAlerts' component={FinanceAlertsScreen} />
         <Stack.Screen name='FinanceSettings' component={FinanceSettingsScreen} />
-        <Stack.Screen name='ParentProgress' component={ParentProgressScreen} />
-        <Stack.Screen name='ParentFees' component={ParentFeesScreen} />
-        <Stack.Screen name='ParentMessages' component={ParentMessagesScreen} />
-        <Stack.Screen name='ParentTimetable' component={ParentTimetableScreen} />
-        <Stack.Screen name='ParentAnnouncements' component={ParentAnnouncementsScreen} />
+        <Stack.Screen name='GuardianProgress' component={GuardianProgressScreen} />
+        <Stack.Screen name='GuardianFees' component={GuardianFeesScreen} />
+        <Stack.Screen name='GuardianMessages' component={GuardianMessagesScreen} />
+        <Stack.Screen name='GuardianTimetable' component={GuardianTimetableScreen} />
+        <Stack.Screen name='GuardianAnnouncements' component={GuardianAnnouncementsScreen} />
         <Stack.Screen name='HodAssignments' component={HodAssignmentsScreen} />
         <Stack.Screen name='HodTimetable' component={HodTimetableScreen} />
         <Stack.Screen name='HodPerformance' component={HodPerformanceScreen} />

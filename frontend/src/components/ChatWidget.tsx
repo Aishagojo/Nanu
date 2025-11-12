@@ -10,12 +10,12 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { palette, spacing, typography, radius } from '@theme/index';
 import { useAuth } from '@context/AuthContext';
 import type { Role } from '@app-types/roles';
 import { transcribeAudio } from '@services/api';
+import { useVoiceRecorder } from '@hooks/useVoiceRecorder';
 
 let API_BASE = '';
 try {
@@ -106,14 +106,6 @@ const knowledgeBase: Array<{ keywords: string[]; answer: string }> = [
   },
 ];
 
-const baseRecordingPreset = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-const recordingOptions: Audio.RecordingOptions = {
-  ...baseRecordingPreset,
-  android: { ...baseRecordingPreset.android, extension: '.m4a', numberOfChannels: 1 },
-  ios: { ...baseRecordingPreset.ios, extension: '.m4a', numberOfChannels: 1 },
-  web: { mimeType: 'audio/mp4', bitsPerSecond: 128000 },
-};
-
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole }) => {
   const { state } = useAuth();
   const token = state.accessToken;
@@ -123,9 +115,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
   );
   const [messages, setMessages] = useState<Message[]>(introMessages);
   const [input, setInput] = useState('');
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [isListening, setIsListening] = useState(false);
-  const [permissionResponse, requestPermission] = Audio.usePermissions();
+  const { start: beginRecording, stop: finishRecording, isRecording } = useVoiceRecorder();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bar1 = useRef(new Animated.Value(0.4)).current;
   const bar2 = useRef(new Animated.Value(0.2)).current;
@@ -239,55 +229,27 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
     [appendBotMessage, fetchWebAnswer, onNavigateRole, token],
   );
 
-  const ensureMicPermission = useCallback(async () => {
-    let response = permissionResponse;
-    if (!response) {
-      response = await Audio.getPermissionsAsync();
-    }
-    if (response?.granted) {
-      return true;
-    }
-    const requested = await requestPermission();
-    if (!requested?.granted) {
-      Alert.alert('Microphone blocked', 'Enable microphone access to speak with Nanu.');
-      return false;
-    }
-    return true;
-  }, [permissionResponse, requestPermission]);
-
   const startRecording = useCallback(async () => {
-    const ok = await ensureMicPermission();
-    if (!ok || isListening) {
+    if (isRecording) {
       return;
     }
     try {
-      setIsListening(true);
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-      });
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(recordingOptions);
-      await rec.startAsync();
-      setRecording(rec);
+      const started = await beginRecording();
+      if (!started) {
+        Alert.alert('Microphone blocked', 'Enable microphone access to speak with Nanu.');
+      }
     } catch (error) {
       console.warn('Mic start failed', error);
-      setIsListening(false);
+      Alert.alert('Recording error', 'Unable to start listening. Please try again.');
     }
-  }, [ensureMicPermission, isListening]);
+  }, [beginRecording, isRecording]);
 
   const stopRecording = useCallback(async () => {
-    if (!recording) {
+    if (!isRecording) {
       return;
     }
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-      setIsListening(false);
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = await finishRecording();
       if (!uri) {
         Alert.alert('No audio', 'I could not capture your voice. Please try again.');
         return;
@@ -305,10 +267,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
     } catch (error) {
       console.warn('Mic stop failed', error);
       Alert.alert('Recording error', 'Something went wrong while listening. Please try again.');
-      setRecording(null);
-      setIsListening(false);
     }
-  }, [appendBotMessage, recording, send, token]);
+  }, [appendBotMessage, finishRecording, isRecording, send, token]);
 
   useEffect(() => {
     if (welcomed) {
@@ -320,15 +280,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
   }, [appendBotMessage, userName, welcomed]);
 
   const handleMicPress = useCallback(() => {
-    if (isListening) {
+    if (isRecording) {
       stopRecording();
     } else {
       startRecording();
     }
-  }, [isListening, startRecording, stopRecording]);
+  }, [isRecording, startRecording, stopRecording]);
 
   useEffect(() => {
-    if (isListening) {
+    if (isRecording) {
       const loop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.1, duration: 350, useNativeDriver: true }),
@@ -368,7 +328,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
     bar1.setValue(0.4);
     bar2.setValue(0.2);
     bar3.setValue(0.3);
-  }, [isListening, pulseAnim, bar1, bar2, bar3]);
+  }, [isRecording, pulseAnim, bar1, bar2, bar3]);
 
   return (
     <View style={styles.overlay} accessible accessibilityLabel="Nanu assistant">
@@ -397,18 +357,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
       <View style={styles.inputRow}>
         <Animated.View style={[styles.micWrapper, { transform: [{ scale: pulseAnim }] }]}>
           <TouchableOpacity
-            style={[styles.micButton, isListening && styles.micButtonActive]}
+            style={[styles.micButton, isRecording && styles.micButtonActive]}
             onPress={handleMicPress}
             accessibilityRole="button"
           >
             <Ionicons
-              name={isListening ? 'stop-circle' : 'mic'}
+              name={isRecording ? 'stop-circle' : 'mic'}
               size={20}
-              color={isListening ? palette.surface : palette.primary}
+              color={isRecording ? palette.surface : palette.primary}
             />
           </TouchableOpacity>
         </Animated.View>
-        {isListening ? (
+        {isRecording ? (
           <View style={styles.listeningIndicator} accessibilityLabel="Listening">
             <Animated.View
               style={[

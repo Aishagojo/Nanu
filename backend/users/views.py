@@ -2,19 +2,23 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from core.models import AuditLog
+from finance.models import FeeItem
+from learning.models import Course, Enrollment
 
-from .models import User, ParentStudentLink, UserProvisionRequest
+from .models import User, ParentStudentLink, UserProvisionRequest, FamilyEnrollmentIntent
 from .serializers import (
     UserSerializer,
     ParentStudentLinkSerializer,
     UserProvisionSerializer,
     UserProvisionRequestSerializer,
+    FamilyEnrollmentSerializer,
 )
 from .notifications import notify_provision_request_approval
 
@@ -87,7 +91,25 @@ class UserProvisionRequestViewSet(viewsets.ModelViewSet):
             raise ValidationError({"detail": "Request has already been processed."})
         if User.objects.filter(username=provision_request.username).exists():
             raise ValidationError({"detail": "A user with this username already exists."})
-        temp_password = User.objects.make_random_password()
+
+        intent = FamilyEnrollmentIntent.objects.filter(
+            student_request=provision_request
+        ).first()
+        intent_role = "student" if intent else None
+        if not intent:
+            intent = FamilyEnrollmentIntent.objects.filter(
+                parent_request=provision_request
+            ).first()
+            intent_role = "parent" if intent else None
+
+        desired_password = None
+        if intent:
+            if intent_role == "student":
+                desired_password = intent.student_password or None
+            else:
+                desired_password = intent.parent_password or None
+
+        temp_password = desired_password or get_random_string(length=12)
         payload = {
             "username": provision_request.username,
             "password": temp_password,
@@ -98,6 +120,11 @@ class UserProvisionRequestViewSet(viewsets.ModelViewSet):
         serializer = UserProvisionSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        if desired_password:
+            user.set_password(desired_password)
+            user.must_change_password = False
+            user.save(update_fields=["password", "must_change_password"])
+            temp_password = desired_password
         provision_request.status = UserProvisionRequest.Status.APPROVED
         provision_request.reviewed_by = acting
         provision_request.reviewed_at = timezone.now()
@@ -113,12 +140,93 @@ class UserProvisionRequestViewSet(viewsets.ModelViewSet):
             changes={"username": provision_request.username, "role": provision_request.role},
         )
         notify_provision_request_approval(provision_request, temp_password)
+        self._finalize_family_enrollment(provision_request)
         return Response(
             {
                 "user": UserSerializer(user).data,
                 "temporary_password": temp_password,
             }
         )
+
+    def _finalize_family_enrollment(self, provision_request: UserProvisionRequest) -> None:
+        intent = FamilyEnrollmentIntent.objects.select_related(
+            "student_request",
+            "parent_request",
+            "student_request__created_user",
+            "parent_request__created_user",
+        ).filter(student_request=provision_request).first()
+        if intent is None:
+            intent = FamilyEnrollmentIntent.objects.select_related(
+                "student_request",
+                "parent_request",
+                "student_request__created_user",
+                "parent_request__created_user",
+            ).filter(parent_request=provision_request).first()
+        if intent is None:
+            return
+
+        student_user = intent.student_request.created_user
+        parent_user = intent.parent_request.created_user if intent.parent_request else None
+
+        if not student_user:
+            return
+        if intent.parent_request and not parent_user:
+            return
+
+        student_updates = []
+        if intent.student_first_name or intent.student_last_name:
+            student_user.first_name = intent.student_first_name
+            student_user.last_name = intent.student_last_name
+            student_updates.extend(["first_name", "last_name"])
+        display_name = student_user.display_name or f"{intent.student_first_name} {intent.student_last_name}".strip()
+        if display_name and student_user.display_name != display_name:
+            student_user.display_name = display_name
+            student_updates.append("display_name")
+        if student_updates:
+            student_user.save(update_fields=list(set(student_updates)))
+
+        if parent_user:
+            parent_updates = []
+            if intent.parent_first_name or intent.parent_last_name:
+                parent_user.first_name = intent.parent_first_name
+                parent_user.last_name = intent.parent_last_name
+                parent_updates.extend(["first_name", "last_name"])
+            parent_display = parent_user.display_name or f"{intent.parent_first_name} {intent.parent_last_name}".strip()
+            if parent_display and parent_user.display_name != parent_display:
+                parent_user.display_name = parent_display
+                parent_updates.append("display_name")
+            if parent_updates:
+                parent_user.save(update_fields=list(set(parent_updates)))
+            link, created = ParentStudentLink.objects.get_or_create(
+                parent=parent_user,
+                student=student_user,
+                defaults={"relationship": intent.relationship},
+            )
+            if not created and intent.relationship and link.relationship != intent.relationship:
+                link.relationship = intent.relationship
+                link.save(update_fields=["relationship"])
+
+        for code in intent.course_codes:
+            course = Course.objects.filter(code__iexact=code).first()
+            if not course:
+                continue
+            enrollment, created = Enrollment.objects.get_or_create(
+                student=student_user,
+                course=course,
+                defaults={"active": True},
+            )
+            if not created and not enrollment.active:
+                enrollment.active = True
+                enrollment.save(update_fields=["active"])
+
+        if intent.fee_amount:
+            FeeItem.objects.get_or_create(
+                student=student_user,
+                title=intent.fee_title or "Tuition",
+                defaults={"amount": intent.fee_amount, "due_date": intent.fee_due_date},
+            )
+
+        intent.delete()
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def reject(self, request, pk=None):
@@ -370,3 +478,32 @@ def provision_user(request):
         changes={"provisioned_role": user.role},
     )
     return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def enroll_family(request):
+    acting = request.user
+    allowed_roles = {User.Roles.RECORDS, User.Roles.ADMIN, User.Roles.HOD}
+    if acting.role not in allowed_roles and not acting.is_staff:
+        raise PermissionDenied("Only records, admin, or HOD users can enroll new families.")
+
+    serializer = FamilyEnrollmentSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    payload = serializer.save()
+
+    student_request = payload.get("student_request")
+    parent_request = payload.get("parent_request")
+    AuditLog.objects.create(
+        user=acting,
+        action="family_enroll_queued",
+        model=UserProvisionRequest._meta.label,
+        object_id=str(student_request.get("id")),
+        changes={
+            "student_username": student_request.get("username"),
+            "parent_username": parent_request.get("username") if parent_request else None,
+            "course_codes": payload.get("course_codes", []),
+        },
+    )
+    return Response(payload, status=status.HTTP_201_CREATED)
+

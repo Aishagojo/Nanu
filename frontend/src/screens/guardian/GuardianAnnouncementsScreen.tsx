@@ -4,29 +4,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
-const timetable = [
-  { time: '08:00', activity: 'Math lesson', location: 'Room B204' },
-  { time: '10:00', activity: 'Science Lab', location: 'Lab 1' },
-  { time: '14:00', activity: 'Therapy session', location: 'Wellness Center' },
+const announcements = [
+  { title: 'Sports Day', detail: 'Friday 10 AM at the main field. Wear school colors.' },
+  { title: 'Guardian Coffee', detail: 'Join us Wednesday 8 AM for a support meetup.' },
 ];
 
-export const ParentTimetableScreen: React.FC = () => (
+export const GuardianAnnouncementsScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Child&apos;s Timetable</Text>
-    <Text style={styles.subtitle}>Follow the day and set spoken reminders 15 minutes ahead.</Text>
-    {timetable.map((slot) => (
-      <View key={slot.activity} style={styles.card}>
-        <Ionicons name='time' size={28} color={palette.secondary} />
+    <Text style={styles.title}>Announcements</Text>
+    <Text style={styles.subtitle}>All notices are transcribed and can be played aloud.</Text>
+    {announcements.map((item) => (
+      <View key={item.title} style={styles.card}>
+        <Ionicons name='megaphone' size={28} color={palette.accent} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{slot.activity}</Text>
-          <Text style={styles.cardMeta}>
-            {slot.time} � {slot.location}
-          </Text>
-          <VoiceButton label='Set reminder' onPress={() => {}} />
+          <Text style={styles.cardTitle}>{item.title}</Text>
+          <Text style={styles.cardMeta}>{item.detail}</Text>
+          <VoiceButton label='Play announcement' onPress={() => {}} />
         </View>
       </View>
     ))}
-    <VoiceButton label='Speak timetable' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -65,7 +61,7 @@ const styles = StyleSheet.create({
     color: palette.textPrimary,
   },
   cardMeta: {
-    ...typography.helper,
+    ...typography.body,
     color: palette.textSecondary,
   },
 });

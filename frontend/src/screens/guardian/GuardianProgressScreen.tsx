@@ -4,25 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
-const announcements = [
-  { title: 'Sports Day', detail: 'Friday 10 AM at the main field. Wear school colors.' },
-  { title: 'Parent Coffee', detail: 'Join us Wednesday 8 AM for a support meetup.' },
+const subjects = [
+  { name: 'Mathematics', score: 85, attendance: '92% present' },
+  { name: 'Science', score: 72, attendance: '88% present' },
+  { name: 'Creative Arts', score: 94, attendance: '100% present' },
 ];
 
-export const ParentAnnouncementsScreen: React.FC = () => (
+export const GuardianProgressScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.title}>Announcements</Text>
-    <Text style={styles.subtitle}>All notices are transcribed and can be played aloud.</Text>
-    {announcements.map((item) => (
-      <View key={item.title} style={styles.card}>
-        <Ionicons name='megaphone' size={28} color={palette.accent} />
+    <Text style={styles.title}>Progress Overview</Text>
+    <Text style={styles.subtitle}>
+      Tap a subject to hear voice summaries or share updates with teachers.
+    </Text>
+    {subjects.map((subject) => (
+      <View key={subject.name} style={styles.card}>
+        <Ionicons name='ribbon' size={28} color={palette.success} />
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardMeta}>{item.detail}</Text>
-          <VoiceButton label='Play announcement' onPress={() => {}} />
+          <Text style={styles.cardTitle}>{subject.name}</Text>
+          <Text style={styles.cardMeta}>
+            Score {subject.score}% - {subject.attendance}
+          </Text>
+          <VoiceButton label='See details' onPress={() => {}} />
         </View>
       </View>
     ))}
+    <VoiceButton label='Speak summary' onPress={() => {}} />
   </ScrollView>
 );
 
@@ -61,7 +67,7 @@ const styles = StyleSheet.create({
     color: palette.textPrimary,
   },
   cardMeta: {
-    ...typography.body,
+    ...typography.helper,
     color: palette.textSecondary,
   },
 });
