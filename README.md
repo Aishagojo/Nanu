@@ -170,8 +170,10 @@ Nanu is steadily evolving into a unified, voice-forward experience that rewards 
 
 ## Team Members
 
-- **Aaliyah**: [Hedera Certification](file:///home/aisha-lul/Downloads/123f3ddd-8e3a-4178-8123-95d333336b8b.pdf)
-- **Leon**: [Hedera Certification](file:///home/aisha-lul/Downloads/fa7f1157-b0cb-4b96-8b12-1386dbbfafdd.pdf)
-- **Salma**: [Hedera Certification](file:///home/aisha-lul/Downloads/ecb4b374-e41c-4f0b-94e7-2a27d220da8d.pdf)
-- **Rene**: [Hedera Certification](file:///home/aisha-lul/Downloads/8b1a1a16-0c8b-47ba-b6f0-e3a31bd86cf3.pdf)
-- **Aisha**: [Hedera Certification](file:///home/aisha-lul/Downloads/73ff644a-2f4b-43c6-9c66-fede0c306813%20(1).pdf)
+- **Aaliyah**: [Hedera Certification][hederarita.pdf](https://github.com/user-attachments/files/23535738/hederarita.pdf)
+- **Leon**: [Hedera Certification][hederarene.pdf][leon.pdf](https://github.com/user-attachments/files/23535742/leon.pdf)
+
+- **Salma**: [Hedera Certification[hederasalma.pdf](https://github.com/user-attachments/files/23535740/hederasalma.pdf)
+- **Rene**: [Hedera Certification](https://github.com/user-attachments/files/23535718/hederarene.pdf)
+- **Aisha**: [Hedera Certification][hederaaisha.pdf](https://github.com/user-attachments/files/23535730/hederaaisha.pdf)
+
