@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   loginRequest,
   fetchJson,
@@ -72,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [bootstrapped, setBootstrapped] = useState(false);
   const [biometricLocked, setBiometricLocked] = useState(false);
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const load = async () => {
@@ -140,10 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
         user: profile,
       }));
+      queryClient.setQueryData(['me', profile.id], profile);
     } catch (error) {
       console.warn('Failed to refresh profile', error);
     }
-  }, [state.accessToken]);
+  }, [state.accessToken, queryClient]);
 
   const login = useCallback<AuthContextValue['login']>(
     async ({ username, password, expectedRole, totpCode }) => {
@@ -154,11 +157,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profile.role !== expectedRole) {
           return { success: false, error: `This account is assigned to the ${profile.role} role.` };
         }
+        queryClient.clear();
         setState({
           accessToken: tokenResponse.access,
           refreshToken: tokenResponse.refresh,
           user: profile,
         });
+        queryClient.setQueryData(['me', profile.id], profile);
         try {
           const hasHardware = await LocalAuthentication.hasHardwareAsync();
           const isEnrolled = await LocalAuthentication.isEnrolledAsync();
@@ -176,15 +181,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const logout = useCallback(async () => {
+    queryClient.clear();
     setState({ accessToken: null, refreshToken: null, user: null });
     setBiometricLocked(false);
     setBiometricsAvailable(false);
     await AsyncStorage.removeItem(STORAGE_KEY);
-  }, []);
+  }, [queryClient]);
 
   const markPasswordUpdated = useCallback(() => {
     setState((prev) => {

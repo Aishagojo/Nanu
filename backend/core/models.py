@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -28,3 +29,55 @@ class AuditLog(models.Model):
     object_id = models.CharField(max_length=64)
     changes = models.JSONField(default=dict, blank=True)
 
+
+class CalendarEvent(TimeStampedModel):
+    owner_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="calendar_events",
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    start_at = models.DateTimeField()
+    end_at = models.DateTimeField()
+    timezone_hint = models.CharField(max_length=64, default="Africa/Nairobi")
+    source_type = models.CharField(max_length=64, blank=True)
+    source_id = models.CharField(max_length=64, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["start_at"]
+        indexes = [
+            models.Index(fields=["owner_user", "start_at"]),
+            models.Index(fields=["source_type", "source_id"]),
+        ]
+        unique_together = ("owner_user", "source_type", "source_id")
+
+    def __str__(self):
+        return f"{self.title} ({self.owner_user_id})"
+
+
+class DeviceRegistration(TimeStampedModel):
+    PLATFORM_CHOICES = (
+        ("expo", "Expo"),
+        ("ios", "Apple"),
+        ("android", "Android"),
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="device_registrations",
+    )
+    platform = models.CharField(max_length=32, choices=PLATFORM_CHOICES)
+    push_token = models.CharField(max_length=255, unique=True)
+    last_registered_at = models.DateTimeField(auto_now=True)
+    app_id = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ["-last_registered_at"]
+        indexes = [models.Index(fields=["user", "platform"])]
+
+    def __str__(self):
+        return f"{self.user_id} - {self.platform}"

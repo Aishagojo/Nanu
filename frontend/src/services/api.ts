@@ -128,6 +128,27 @@ export type ApiFeeItem = {
   updated_at: string;
 };
 
+export type ApiCalendarEvent = {
+  id: number;
+  title: string;
+  description?: string;
+  start_at: string;
+  end_at: string;
+  timezone_hint?: string | null;
+  owner_user_id?: number;
+  meta?: Record<string, unknown>;
+};
+
+export type ApiAssignmentSummary = {
+  id: number;
+  title: string;
+  description?: string;
+  unit?: number | null;
+  unit_name?: string | null;
+  due_at?: string | null;
+  status?: string;
+};
+
 type LoginResponse = TokenResponse & {
   user?: ApiUser;
 };
@@ -163,12 +184,15 @@ export const endpoints = {
   progressSummary: (studentId: number) =>
     `${API_BASE}/api/learning/students/${studentId}/progress/`,
   courses: () => `${API_BASE}/api/learning/courses/`,
+  assignments: () => `${API_BASE}/api/learning/assignments/`,
   quickEnroll: () => `${API_BASE}/api/learning/enrollments/quick/`,
   courseRoster: (courseId: number) => `${API_BASE}/api/learning/courses/${courseId}/roster/`,
   attendanceCheckIn: () => `${API_BASE}/api/learning/attendance/check-in/`,
   examRegister: () => `${API_BASE}/api/learning/exams/register/`,
   financeSummary: (studentId: number) => `${API_BASE}/api/finance/students/${studentId}/summary/`,
   timetable: (studentId: number) => `${API_BASE}/api/learning/students/${studentId}/timetable/`,
+  calendarEvents: () => `${API_BASE}/api/calendar/events/`,
+  registerDevice: () => `${API_BASE}/api/devices/register/`,
   totpSetup: () => `${API_BASE}/api/users/totp/setup/`,
   totpActivate: () => `${API_BASE}/api/users/totp/activate/`,
   totpDisable: () => `${API_BASE}/api/users/totp/disable/`,
@@ -243,6 +267,30 @@ export const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   }
 
   return response.json();
+};
+
+export const fetchCalendarEvents = (
+  token: string,
+  range: { from: string; to: string },
+  owner: 'me' | 'all' = 'me',
+) => {
+  const params = new URLSearchParams({
+    from: range.from,
+    to: range.to,
+    owner,
+  });
+  const url = `${endpoints.calendarEvents()}?${params.toString()}`;
+  return fetchJson<ApiCalendarEvent[]>(url, token);
+};
+
+export const fetchAssignments = (token: string, options: { unitId?: number } = {}) => {
+  const params = new URLSearchParams();
+  if (typeof options.unitId === 'number') {
+    params.append('unit', String(options.unitId));
+  }
+  const qs = params.toString();
+  const url = qs ? `${endpoints.assignments()}?${qs}` : endpoints.assignments();
+  return fetchJson<ApiAssignmentSummary[]>(url, token);
 };
 
 export const loginRequest = async ({
@@ -342,6 +390,15 @@ export const disableTotp = async (token: string, code: string) =>
 
 export const assignUserRole = async (token: string, userId: number, role: Role) =>
   authedPost<ApiUser>(endpoints.assignRole(), token, { user_id: userId, role });
+
+export type RegisterDevicePayload = {
+  platform: 'expo' | 'ios' | 'android';
+  push_token: string;
+  app_id?: string;
+};
+
+export const registerDevice = (token: string, payload: RegisterDevicePayload) =>
+  authedPost(endpoints.registerDevice(), token, payload);
 
 export type ApiMessage = {
   id: number;

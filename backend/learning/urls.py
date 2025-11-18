@@ -13,6 +13,8 @@ from .core_views import (
 from .views import (
     AchievementCategoryViewSet,
     AchievementViewSet,
+    AssignmentViewSet,
+    RegistrationViewSet,
     StudentAchievementViewSet,
     RewardClaimViewSet,
     TermProgressViewSet,
@@ -27,6 +29,8 @@ router.register(r"achievements", AchievementViewSet, basename="achievement")
 router.register(r"student-achievements", StudentAchievementViewSet, basename="student-achievement")
 router.register(r"reward-claims", RewardClaimViewSet, basename="reward-claim")
 router.register(r"term-progress", TermProgressViewSet, basename="term-progress")
+router.register(r"assignments", AssignmentViewSet, basename="assignment")
+router.register(r"registrations", RegistrationViewSet, basename="registration")
 
 custom_patterns = [
     path("students/<int:student_id>/progress/", ProgressSummaryView.as_view(), name="progress-summary"),

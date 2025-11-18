@@ -5,3 +5,4 @@ from .achievements import (
     RewardClaimViewSet,
     TermProgressViewSet,
 )
+from .assignments import AssignmentViewSet, RegistrationViewSet

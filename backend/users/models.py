@@ -66,6 +66,18 @@ class User(AbstractUser):
         self.totp_enabled = False
         self.totp_activated_at = None
 
+    def linked_student_ids(self):
+        """
+        Return a list of student ids associated with this user when acting as a parent/guardian.
+        """
+        if self.role != self.Roles.PARENT:
+            return []
+        if not hasattr(self, "_linked_student_ids_cache"):
+            self._linked_student_ids_cache = list(
+                self.linked_students.values_list("student_id", flat=True)
+            )
+        return self._linked_student_ids_cache
+
 
 class ParentStudentLink(TimeStampedModel):
     parent = models.ForeignKey(

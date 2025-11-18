@@ -1,4 +1,5 @@
 from core.views import index
+from core.views.devices import DeviceRegistrationView
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -15,11 +16,14 @@ from users.auth import CustomTokenObtainPairView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/core/", include("core.urls")),
+    path("api/calendar/", include("core.urls_calendar")),
     path("api/users/", include("users.urls")),
     path("api/learning/", include("learning.urls")),
+    path("api/notifications/", include("notifications.urls")),
     path("api/finance/", include("finance.urls")),
     path("api/repository/", include("repository.urls")),
     path("api/communications/", include("communications.urls")),
+    path("api/devices/register/", DeviceRegistrationView.as_view(), name="device-register"),
     # Auth helpers for browsable API
     path("api-auth/", include("rest_framework.urls")),
     # JWT auth endpoints

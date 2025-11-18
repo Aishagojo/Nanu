@@ -5,6 +5,7 @@ from .achievements import (
     RewardClaimSerializer,
     TermProgressSerializer,
 )
+from .assignments import AssignmentSerializer, RegistrationSerializer
 from .core import (
     CourseSerializer,
     UnitSerializer,
@@ -30,3 +31,30 @@ from .goals import (
     LearningSupportSerializer,
     GoalReflectionSerializer,
 )
+
+__all__ = [
+    "AchievementCategorySerializer",
+    "AchievementSerializer",
+    "StudentAchievementSerializer",
+    "RewardClaimSerializer",
+    "TermProgressSerializer",
+    "AssignmentSerializer",
+    "RegistrationSerializer",
+    "CourseSerializer",
+    "UnitSerializer",
+    "EnrollmentSerializer",
+    "AttendanceEventSerializer",
+    "CourseScheduleSerializer",
+    "CourseSessionSerializer",
+    "VoiceAttendanceSerializer",
+    "SessionReminderSerializer",
+    "StudentProgressSerializer",
+    "ActivityLogSerializer",
+    "CompletionRecordSerializer",
+    "CompletionRecordListSerializer",
+    "LearningGoalSerializer",
+    "LearningGoalListSerializer",
+    "LearningMilestoneSerializer",
+    "LearningSupportSerializer",
+    "GoalReflectionSerializer",
+]

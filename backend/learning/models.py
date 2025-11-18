@@ -1,6 +1,7 @@
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
 
 from core.models import TimeStampedModel
 from .achievement_models import AchievementCategory, Achievement, StudentAchievement, RewardClaim, TermProgress
@@ -71,6 +72,91 @@ class Unit(TimeStampedModel):
 
     def __str__(self):
         return self.title
+
+    def is_taught_by(self, lecturer) -> bool:
+        """
+        Helper to check if the provided lecturer (User) is assigned to this unit's course.
+        """
+        if not lecturer:
+            return False
+        lecturer_id = getattr(lecturer, "id", None)
+        if lecturer_id is None:
+            lecturer = getattr(lecturer, "user", None)
+            lecturer_id = getattr(lecturer, "id", None)
+        if lecturer_id is None or not self.course_id:
+            return False
+        return self.course.lecturer_id == lecturer_id
+
+
+class Assignment(TimeStampedModel):
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("published", "Published"),
+        ("closed", "Closed"),
+    ]
+
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="assignments")
+    lecturer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="draft")
+    owner_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="owned_assignments",
+    )
+
+    class Meta:
+        ordering = ["-due_at", "-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.owner_user_id:
+            self.owner_user_id = self.lecturer_id
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} ({self.unit_id})"
+
+
+class Registration(TimeStampedModel):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="registrations",
+    )
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="registrations")
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending")
+    academic_year = models.CharField(max_length=9, blank=True)
+    trimester = models.PositiveSmallIntegerField(default=1)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_registrations",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("student", "unit", "academic_year", "trimester")
+        ordering = ["-created_at"]
+
+    def mark_approved(self, approver):
+        self.status = "approved"
+        self.approved_by = approver
+        self.approved_at = timezone.now()
+        self.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
 
 
 class Enrollment(TimeStampedModel):
