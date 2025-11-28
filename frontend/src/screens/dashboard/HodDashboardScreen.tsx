@@ -21,6 +21,7 @@ import {
   fetchDepartmentLecturers,
   fetchDepartmentProgrammes,
   fetchDepartmentStudents,
+  ApiStudent,
 } from '@services/api';
 
 type HodTile = {
@@ -80,8 +81,19 @@ export const HodDashboardScreen: React.FC = () => {
   const [department, setDepartment] = useState<any>(null);
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [programmes, setProgrammes] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const [studentsByYear, setStudentsByYear] = useState<Record<string, ApiStudent[]>>({});
   const [loading, setLoading] = useState(false);
+
+  const groupStudentsByYear = (students: ApiStudent[]) => {
+    return students.reduce((acc, student) => {
+      const year = `Year ${student.year}`;
+      if (!acc[year]) {
+        acc[year] = [];
+      }
+      acc[year].push(student);
+      return acc;
+    }, {} as Record<string, ApiStudent[]>);
+  };
 
   const loadData = useCallback(async () => {
     if (token && hodId) {
@@ -97,7 +109,7 @@ export const HodDashboardScreen: React.FC = () => {
           ]);
           setLecturers(lects);
           setProgrammes(progs);
-          setStudents(studs);
+          setStudentsByYear(groupStudentsByYear(studs));
         }
       } catch (err) {
         console.error("Failed to load HOD dashboard data", err);
@@ -144,7 +156,14 @@ export const HodDashboardScreen: React.FC = () => {
               <Text style={styles.deptName}>{department.name}</Text>
               <Text>Programmes: {programmes.length}</Text>
               <Text>Lecturers: {lecturers.length}</Text>
-              <Text>Students: {students.length}</Text>
+              {Object.entries(studentsByYear).map(([year, students]) => (
+                <View key={year}>
+                  <Text style={styles.yearTitle}>{year}</Text>
+                  {students.map(student => (
+                    <Text key={student.user.id}>{student.user.display_name}</Text>
+                  ))}
+                </View>
+              ))}
             </View>
           ) : (
             <Text>No department information available.</Text>
@@ -194,5 +213,9 @@ const styles = StyleSheet.create({
   deptName: {
     ...typography.body,
     fontWeight: 'bold',
+  },
+  yearTitle: {
+    ...typography.headingS,
+    marginTop: spacing.md,
   }
 });

@@ -737,7 +737,7 @@ export const fetchDepartmentProgrammes = (token: string, departmentId: number) =
     fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/programmes/`, token);
 
 export const fetchDepartmentStudents = (token: string, departmentId: number) =>
-    fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/students/`, token);
+    fetchJson<ApiStudent[]>(`${API_BASE}/api/core/api/departments/${departmentId}/students/`, token);
 
 export const fetchHodDepartment = (token: string, hodId: number) =>
     fetchJson<any>(`${API_BASE}/api/core/api/hods/${hodId}/`, token);
