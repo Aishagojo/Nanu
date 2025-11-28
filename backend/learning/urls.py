@@ -24,6 +24,7 @@ from .views.assignments import (
     RegistrationViewSet,
     SubmissionViewSet,
 )
+from .views.progress_views import ProgressSummaryView
 
 router = DefaultRouter()
 router.register(r"programmes", ProgrammeViewSet, basename="programme")
@@ -42,12 +43,12 @@ router.register(r"term-progress", TermProgressViewSet, basename="term-progress")
 router.register(r"assignments", AssignmentViewSet, basename="assignment")
 router.register(r"registrations", RegistrationViewSet, basename="registration")
 
-# custom_patterns = [
-#     path("students/<int:student_id>/progress/", ProgressSummaryView.as_view(), name="progress-summary"),
-#     path("enrollments/quick/", QuickEnrollmentView.as_view(), name="quick-enrollment"),
-#     path("courses/<int:course_id>/roster/", CourseRosterView.as_view(), name="course-roster"),
-#     path("attendance/check-in/", AttendanceCheckInView.as_view(), name="attendance-check-in"),
-#     path("exams/register/", ExamRegistrationView.as_view(), name="exam-register"),
-# ]
+custom_patterns = [
+    path("students/<int:student_id>/progress/", ProgressSummaryView.as_view(), name="progress-summary"),
+    # path("enrollments/quick/", QuickEnrollmentView.as_view(), name="quick-enrollment"),
+    # path("courses/<int:course_id>/roster/", CourseRosterView.as_view(), name="course-roster"),
+    # path("attendance/check-in/", AttendanceCheckInView.as_view(), name="attendance-check-in"),
+    # path("exams/register/", ExamRegistrationView.as_view(), name="exam-register"),
+]
 
-urlpatterns = router.urls # + custom_patterns
+urlpatterns = router.urls + custom_patterns

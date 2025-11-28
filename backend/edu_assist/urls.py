@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/repository/", include("repository.urls")),
     path("api/communications/", include("communications.urls")),
     path("api/rewards/", include("rewards.urls")),
+    path("api/chatbot/", include("chatbot.urls")),
     path("api/devices/register/", DeviceRegistrationView.as_view(), name="device-register"),
     # Auth helpers for browsable API
     path("api-auth/", include("rest_framework.urls")),

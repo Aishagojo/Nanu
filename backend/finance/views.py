@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from users.models import Student
 from .models import Payment, FinanceStatus, FeeStructure
 from .serializers import PaymentSerializer, FeeStructureSerializer, FinanceStatusSerializer
+from .services import update_finance_status
 
 
 class FinanceReportView(APIView):
@@ -70,17 +71,11 @@ class RecordPaymentView(APIView):
             payment = serializer.save()
 
             # Update finance status
-            try:
-                student = payment.student
-                finance_status, created = FinanceStatus.objects.get_or_create(
-                    student=student,
-                    academic_year=student.year,
-                    trimester=student.trimester,
-                )
-                finance_status.total_paid += payment.amount
-                finance_status.save()
-            except Student.DoesNotExist:
-                pass
+            update_finance_status(
+                student_id=payment.student.id,
+                academic_year=payment.academic_year,
+                trimester=payment.trimester
+            )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -5,12 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton, AlertBanner } from '@components/index';
 import { useAuth } from '@context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import {
   fetchCourses,
   fetchCourseRoster,
   submitAttendanceEvent,
+  createDirectMessage,
   type ApiCourse,
   type CourseRoster,
+  type ApiThread,
 } from '@services/api';
 
 const sessions = [
@@ -44,6 +47,7 @@ export const LecturerClassesScreen: React.FC = () => {
   const { state } = useAuth();
   const token = state.accessToken;
   const lecturerId = state.user?.id;
+  const navigation = useNavigation();
 
   const [courses, setCourses] = useState<ApiCourse[]>([]);
   const [courseError, setCourseError] = useState<string | null>(null);
@@ -145,6 +149,19 @@ export const LecturerClassesScreen: React.FC = () => {
     }
   };
 
+  const handleDirectMessage = async (studentId: number) => {
+    if (!token) {
+      return;
+    }
+    try {
+      const thread = await createDirectMessage(token, studentId);
+      navigation.navigate('LecturerMessages', { threadId: thread.id });
+    } catch (error: any) {
+      console.warn('Failed to create direct message', error);
+      Alert.alert('Error', 'Unable to start a conversation.');
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {upcomingMessage ? <AlertBanner message={upcomingMessage} variant='info' /> : null}
@@ -216,6 +233,10 @@ export const LecturerClassesScreen: React.FC = () => {
                           <Text style={styles.rosterStudent}>
                             {student.display_name || student.username}
                           </Text>
+                           <VoiceButton
+                            label="Text"
+                            onPress={() => handleDirectMessage(student.id)}
+                          />
                           <VoiceButton
                             label={
                               marked

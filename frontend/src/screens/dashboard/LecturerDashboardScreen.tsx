@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ScrollView, View, StyleSheet, RefreshControl, Text, ActivityIndicator } from 'react-native';
 import {
   GreetingHeader,
   DashboardTile,
@@ -10,12 +10,14 @@ import {
   VoiceSearchBar,
   ChatWidget,
 } from '@components/index';
-import { palette, spacing } from '@theme/index';
+import { palette, spacing, typography } from '@theme/index';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { usePullToRefresh } from '@hooks/usePullToRefresh';
+import { useAuth } from '@context/AuthContext';
+import { fetchCourses, type ApiCourse } from '@services/api';
 
 type LecturerTile = {
   key: string;
@@ -72,8 +74,37 @@ const lecturerTiles: LecturerTile[] = [
 
 export const LecturerDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { refreshing, onRefresh } = usePullToRefresh();
+  const { state } = useAuth();
+  const token = state.accessToken;
+  const lecturerId = state.user?.id;
+  const { refreshing, onRefresh: onRefreshPull } = usePullToRefresh();
   const [showAssistant, setShowAssistant] = useState(false);
+  const [myCourses, setMyCourses] = useState<ApiCourse[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
+  const loadData = useCallback(async () => {
+    if (token && lecturerId) {
+      setLoadingCourses(true);
+      try {
+        const data = await fetchCourses(token);
+        const owned = data.filter(course => course.lecturer === lecturerId);
+        setMyCourses(owned);
+      } catch (err) {
+        console.error("Failed to fetch lecturer's courses", err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    }
+  }, [token, lecturerId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = useCallback(() => {
+    onRefreshPull();
+    loadData();
+  }, [onRefreshPull, loadData]);
 
   return (
     <View style={styles.container}>
@@ -87,12 +118,27 @@ export const LecturerDashboardScreen: React.FC = () => {
           />
         }
       >
-        <GreetingHeader name='Mr. Kamau' rightAccessory={<NotificationBell />} />
+        <GreetingHeader name={state.user?.display_name || 'Lecturer'} rightAccessory={<NotificationBell />} />
         <VoiceSearchBar
           onPress={() => navigation.navigate('Search')}
           onVoicePress={() => navigation.navigate('Search')}
         />
         <AlertBanner message='Start ICT201 session in 10 minutes' variant='info' />
+        
+        <View style={styles.myCoursesSection}>
+          <Text style={styles.sectionTitle}>My Units</Text>
+          {loadingCourses ? (
+            <ActivityIndicator color={palette.primary} />
+          ) : (
+            myCourses.map(course => (
+              <View key={course.id} style={styles.courseCard}>
+                <Text style={styles.courseTitle}>{course.name}</Text>
+                <Text style={styles.courseCode}>{course.code}</Text>
+              </View>
+            ))
+          )}
+        </View>
+
         <View style={styles.tiles}>
           {lecturerTiles.map((tile) => (
             <DashboardTile
@@ -123,4 +169,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
   scroll: { padding: spacing.lg, paddingBottom: 160, gap: spacing.md },
   tiles: { gap: spacing.md },
+  myCoursesSection: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    ...typography.headingM,
+    color: palette.textPrimary,
+    marginBottom: spacing.md,
+  },
+  courseCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  courseTitle: {
+    ...typography.body,
+    fontWeight: 'bold',
+    color: palette.textPrimary,
+  },
+  courseCode: {
+    ...typography.helper,
+    color: palette.textSecondary,
+  },
 });

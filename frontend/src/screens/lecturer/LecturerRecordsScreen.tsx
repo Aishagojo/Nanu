@@ -4,10 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
+// TODO: This screen needs a proper backend API to fetch submissions for the lecturer's units.
+// The current data is mocked.
 const grades = [
-  { student: 'Aisha', course: 'ICT201', score: '85%', status: 'Great progress' },
-  { student: 'Brian', course: 'ICT201', score: '68%', status: 'Needs follow-up' },
-  { student: 'Lina', course: 'ICT305', score: '92%', status: 'Ready for advanced work' },
+  { student: 'Student Name', course: 'ICT201', score: '85%', status: 'Great progress' },
+  { student: 'Another Student', course: 'ICT201', score: '68%', status: 'Needs follow-up' },
+  { student: 'Yet Another', course: 'ICT305', score: '92%', status: 'Ready for advanced work' },
 ];
 
 export const LecturerRecordsScreen: React.FC = () => (

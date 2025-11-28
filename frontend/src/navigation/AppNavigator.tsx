@@ -82,7 +82,7 @@ export type RootStackParamList = {
   StudentLibrary: undefined;
   LecturerClasses: undefined;
   LecturerAssignments: undefined;
-  LecturerMessages: undefined;
+  LecturerMessages: { threadId?: number };
   LecturerManagement: { departmentId: number };
   LecturerRecords: undefined;
   LecturerTimetable: undefined;

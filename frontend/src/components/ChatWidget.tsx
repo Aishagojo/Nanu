@@ -14,15 +14,8 @@ import * as Speech from 'expo-speech';
 import { palette, spacing, typography, radius } from '@theme/index';
 import { useAuth } from '@context/AuthContext';
 import type { Role } from '@app-types/roles';
-import { transcribeAudio } from '@services/api';
+import { transcribeAudio, askChatbot } from '@services/api';
 import { useVoiceRecorder } from '@hooks/useVoiceRecorder';
-
-let API_BASE = '';
-try {
-  API_BASE = require('@env').EXPO_PUBLIC_API_URL || '';
-} catch {
-  API_BASE = '';
-}
 
 type Message = { id: string; text: string; from: 'user' | 'bot' };
 
@@ -31,30 +24,6 @@ type ChatWidgetProps = {
   onNavigateRole?: (role: Role) => void;
 };
 
-const roleLabels: Record<Role, string> = {
-  student: 'Student',
-  parent: 'Parent',
-  lecturer: 'Lecturer',
-  hod: 'Head of Department',
-  finance: 'Finance Officer',
-  records: 'Records Officer',
-  admin: 'Administrator',
-  superadmin: 'Super Administrator',
-  librarian: 'Librarian',
-};
-
-const roleMatchers: Array<{ role: Role; keywords: string[] }> = [
-  { role: 'student', keywords: ['student', 'learner', 'pupil'] },
-  { role: 'parent', keywords: ['parent', 'guardian'] },
-  { role: 'lecturer', keywords: ['lecturer', 'teacher', 'tutor'] },
-  { role: 'hod', keywords: ['hod', 'head of department', 'department head'] },
-  { role: 'finance', keywords: ['finance', 'bursar', 'fees'] },
-  { role: 'records', keywords: ['records', 'registry', 'registrar'] },
-  { role: 'admin', keywords: ['admin', 'administrator'] },
-  { role: 'superadmin', keywords: ['super admin', 'superadmin', 'platform admin'] },
-  { role: 'librarian', keywords: ['librarian', 'library', 'resource desk'] },
-];
-
 const introMessages: Message[] = [
   {
     id: 'intro-1',
@@ -62,47 +31,9 @@ const introMessages: Message[] = [
     from: 'bot',
   },
   {
-    id: 'intro-2',
-    text: 'We currently support 1,250 students and 160 lecturers. Tourism & Travel has 320 learners, 24 lecturers, 18 labs, and a field trip every term.',
-    from: 'bot',
-  },
-  {
     id: 'intro-3',
-    text: 'Ask me about assignments, rewards, fees, or travel facts. You can also speak using the microphone button.',
+    text: 'Ask me about assignments, rewards, or fees. You can also speak using the microphone button.',
     from: 'bot',
-  },
-];
-
-const knowledgeBase: Array<{ keywords: string[]; answer: string }> = [
-  {
-    keywords: ['tourism', 'travel', 'field trip', 'trip'],
-    answer:
-      'Tourism & Travel has 320 students and 24 lecturers. There are 18 lab sessions each term plus one field trip focused on safety, routes, and hospitality practice. Open the Repository screen to download tour plans, maps, and packing checklists.',
-  },
-  {
-    keywords: ['assignment', 'homework', 'submit', 'video'],
-    answer:
-      'Assignments accept text, pictures, voice, or video. Tap the Assignments tile, pick the task, then use the microphone or camera buttons. Lecturers get an alert instantly and can respond in the Messages screen.',
-  },
-  {
-    keywords: ['lecturer', 'teacher', 'staff', 'info'],
-    answer:
-      'We track 160 lecturers. Each lecturer dashboard shows classes, attendance, and communication threads. Parents can message a lecturer via the Messages tile and see plain-language summaries of replies.',
-  },
-  {
-    keywords: ['students', 'numbers', 'enrolled'],
-    answer:
-      'Across campus there are 1,250 students. Tourism & Travel has 320 learners, ICT 280, Hospitality 210, and the rest are in Business, Special Education, and Arts.',
-  },
-  {
-    keywords: ['fees', 'balance', 'finance', 'payment'],
-    answer:
-      'Only parents and Finance officers see exact fee balances. Everyone else sees a friendly status such as “pending clearance.” Students must clear fees before exam registration, and Finance can log payments in the Finance Students screen.',
-  },
-  {
-    keywords: ['rewards', 'points', 'token'],
-    answer:
-      'Rewards come from on-time attendance, early submissions, and helping classmates. Fill the progress bar to unlock up to three claims per term. Each reward card shows the points you need before tapping Claim.',
   },
 ];
 
@@ -124,11 +55,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
   const speakReply = useCallback((text: string) => {
     try {
       Speech.stop();
-      Speech.speak(text, { rate: 1, pitch: 1 });
+      Speech.speak(text, { rate: state.user?.speech_rate || 1 });
     } catch {
       // ignore speech errors
     }
-  }, []);
+  }, [state.user?.speech_rate]);
 
   const [welcomed, setWelcomed] = useState(false);
 
@@ -141,27 +72,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
     [speakReply],
   );
 
-  const fetchWebAnswer = useCallback(async (query: string) => {
-    try {
-      const resp = await fetch(
-        `https://api.duckduckgo.com/?q=${encodeURIComponent(
-          query,
-        )}&format=json&no_redirect=1&no_html=1`,
-      );
-      const data = await resp.json();
-      if (data?.AbstractText) {
-        return data.AbstractText;
-      }
-      const related = data?.RelatedTopics?.find((topic: any) => topic?.Text);
-      if (related?.Text) {
-        return related.Text;
-      }
-    } catch {
-      // ignore
-    }
-    return null;
-  }, []);
-
   const send = useCallback(
     async (text: string) => {
       if (!text || !text.trim()) {
@@ -172,61 +82,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
       setMessages((m) => [...m, userMsg]);
       setInput('');
 
-      const lower = cleaned.toLowerCase();
-
-      if (onNavigateRole) {
-        const matched = roleMatchers.find((item) =>
-          item.keywords.some((keyword) => lower.includes(keyword)),
-        );
-        if (matched) {
-          const label = roleLabels[matched.role];
-          appendBotMessage(
-            `Opening the ${label} dashboard. I will stay here if you need more help.`,
-          );
-          onNavigateRole(matched.role);
-          return;
-        }
-      }
-
-      const kbMatch = knowledgeBase.find((entry) =>
-        entry.keywords.some((keyword) => lower.includes(keyword)),
-      );
-      if (kbMatch) {
-        appendBotMessage(kbMatch.answer);
+      if (!token) {
+        appendBotMessage("I'm sorry, you need to be logged in to chat with me.");
         return;
       }
 
       try {
-        const url = `${API_BASE || ''}/api/communications/support/chat/`;
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ text: cleaned }),
-        });
-        const data = await resp.json();
-        const reply = data?.reply;
-        if (reply) {
-          appendBotMessage(reply);
-          return;
-        }
-      } catch {
-        // fall through to web lookup
+        const response = await askChatbot(token, cleaned);
+        appendBotMessage(response.text);
+      } catch (error) {
+        console.error("Chatbot error:", error);
+        appendBotMessage("I'm having a little trouble right now. Please try again later.");
       }
-
-      const webAnswer = await fetchWebAnswer(cleaned);
-      if (webAnswer) {
-        appendBotMessage(webAnswer);
-        return;
-      }
-
-      appendBotMessage(
-        'I could not find that yet. Try asking about assignments, tourism trips, rewards, or fees and I will explain it step by step.',
-      );
     },
-    [appendBotMessage, fetchWebAnswer, onNavigateRole, token],
+    [appendBotMessage, token],
   );
 
   const startRecording = useCallback(async () => {
@@ -262,7 +131,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
       if (text) {
         send(text);
       } else {
-        appendBotMessage('I could not understand that. Please try speaking again.');
+        appendBotMessage("I'm sorry, I couldn't understand that. Could you please try again?");
       }
     } catch (error) {
       console.warn('Mic stop failed', error);
@@ -274,7 +143,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onClose, onNavigateRole 
     if (welcomed) {
       return;
     }
-    const welcome = `Hello ${userName}! I'm Nanu. Ask me anything about your classes, tourism trips, or even questions outside the app.`;
+    const welcome = `Hello ${userName}! I'm Nanu. How can I help you?`;
     appendBotMessage(welcome);
     setWelcomed(true);
   }, [appendBotMessage, userName, welcomed]);

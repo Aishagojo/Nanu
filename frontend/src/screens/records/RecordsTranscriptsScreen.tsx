@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
+// TODO: This screen needs a proper backend API to fetch students and their transcript status.
+// The current data is mocked.
 const transcripts = [
-  { student: 'Aisha', status: 'Ready', format: 'PDF' },
-  { student: 'Brian', status: 'Awaiting finance clearance', format: 'PDF' },
+  { student: 'Student Name', status: 'Ready', format: 'PDF' },
+  { student: 'Another Student', status: 'Awaiting finance clearance', format: 'PDF' },
 ];
 
 export const RecordsTranscriptsScreen: React.FC = () => (

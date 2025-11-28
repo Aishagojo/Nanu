@@ -5,9 +5,14 @@ import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
 const requests = [
-  { employer: 'Inclusive Tech Ltd', student: 'Aisha', status: 'Pending' },
-  { employer: 'Ministry of Education', student: 'Brian', status: 'Completed' },
+  { employer: 'Inclusive Tech Ltd', student: 'Student Name', status: 'Pending' },
+  { employer: 'Ministry of Education', student: 'Another Student', status: 'Completed' },
 ];
+
+// TODO: This screen needs a proper backend API and data model.
+// The current data is mocked. The spec does not mention "verifications".
+// This might be a feature to be designed or a leftover from a previous version.
+
 
 export const RecordsVerificationsScreen: React.FC = () => (
   <ScrollView contentContainerStyle={styles.container}>

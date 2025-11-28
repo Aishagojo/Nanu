@@ -7,6 +7,7 @@ import { NotificationBell, VoiceButton } from '@components/index';
 import { createMessage, fetchThreads, transcribeAudio, type ApiMessage, type ApiThread } from '@services/api';
 import { useAuth } from '@context/AuthContext';
 import { useNotifications, type AppRoute } from '@context/NotificationContext';
+import { useRoute } from '@react-navigation/native';
 import { useVoiceRecorder } from '@hooks/useVoiceRecorder';
 
 type RecordingState = 'idle' | 'recording' | 'processing' | 'uploading';
@@ -101,6 +102,8 @@ export const VoiceThreadScreen: React.FC<VoiceThreadScreenProps> = ({
   const { state } = useAuth();
   const token = state.accessToken;
   const { ingestThreads, markThreadRead } = useNotifications();
+  const route = useRoute();
+  const params = route.params as { threadId?: number };
 
   const [threads, setThreads] = useState<ApiThread[]>([]);
   const [loadingThreads, setLoadingThreads] = useState(true);
@@ -162,6 +165,9 @@ const selectedThread = useMemo(
         setThreadError(null);
         ingestThreads(data, notificationRoute);
         setSelectedThreadId((prev) => {
+          if (params?.threadId && data.some((thread) => thread.id === params.threadId)) {
+            return params.threadId;
+          }
           if (prev && data.some((thread) => thread.id === prev)) {
             return prev;
           }
@@ -176,7 +182,7 @@ const selectedThread = useMemo(
         }
       }
     },
-    [ingestThreads, notificationRoute, token]
+    [ingestThreads, notificationRoute, token, params?.threadId]
   );
 
   useEffect(() => {

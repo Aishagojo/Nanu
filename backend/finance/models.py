@@ -17,13 +17,15 @@ class FeeStructure(TimeStampedModel):
 
 class Payment(TimeStampedModel):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="payments", null=True, blank=True)
+    academic_year = models.IntegerField()
+    trimester = models.IntegerField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     method = models.CharField(max_length=50, blank=True)
     ref = models.CharField(max_length=100, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Payment of {self.amount} for {self.student.user.username}"
+        return f"Payment of {self.amount} for {self.student.user.username} for {self.academic_year}/T{self.trimester}"
 
 class FinanceThreshold(TimeStampedModel):
     programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="finance_thresholds", null=True, blank=True)
@@ -43,6 +45,11 @@ class FinanceStatus(TimeStampedModel):
         PARTIAL = 'partial', 'Partial'
         PENDING = 'pending', 'Pending'
 
+    class Clearance(models.TextChoices):
+        CLEARED_FOR_REGISTRATION = 'cleared_for_registration', 'Cleared for Registration'
+        CLEARED_FOR_EXAMS = 'cleared_for_exams', 'Cleared for Exams'
+        BLOCKED = 'blocked', 'Blocked'
+
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="finance_statuses", null=True, blank=True)
     academic_year = models.IntegerField()
     trimester = models.IntegerField()
@@ -54,6 +61,7 @@ class FinanceStatus(TimeStampedModel):
         return self.total_due - self.total_paid
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    clearance_status = models.CharField(max_length=30, choices=Clearance.choices, default=Clearance.BLOCKED)
 
     class Meta:
         unique_together = ("student", "academic_year", "trimester")

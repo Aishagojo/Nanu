@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
 
+// TODO: This screen needs a proper backend API to fetch a list of all students with their finance status.
+// The current data is mocked.
 const ledgers = [
-  { student: 'Aisha', balance: 'KES 4,000', status: 'Partial', tag: palette.warning },
-  { student: 'Brian', balance: 'KES 0', status: 'Paid', tag: palette.success },
+  { student: 'Student Name', balance: 'KES 4,000', status: 'Partial', tag: palette.warning },
+  { student: 'Another Student', balance: 'KES 0', status: 'Paid', tag: palette.success },
 ];
 
 export const FinanceStudentsScreen: React.FC = () => (

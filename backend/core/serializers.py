@@ -6,17 +6,16 @@ from users.models import HOD
 User = get_user_model()
 
 
-class HODSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HOD
-        fields = "__all__"
-
-
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
-        fields = ['id', 'name', 'code', 'head_of_department']
-        read_only_fields = ['head_of_department']
+        fields = ['id', 'name', 'code']
+
+class HODSerializer(serializers.ModelSerializer):
+    department = DepartmentSerializer(read_only=True)
+    class Meta:
+        model = HOD
+        fields = ['user', 'department']
 
 
 class CalendarEventSerializer(serializers.ModelSerializer):

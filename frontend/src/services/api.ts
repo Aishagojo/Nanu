@@ -203,7 +203,15 @@ export const endpoints = {
   studentRewards: (studentId: number) => `${API_BASE}/api/rewards/student/${studentId}/`,
   rewardsLeaderboard: () => `${API_BASE}/api/rewards/leaderboard/`,
   awardMerit: () => `${API_BASE}/api/rewards/award/`,
+  directMessage: () => `${API_BASE}/api/communications/threads/direct-message/`,
+  askChatbot: () => `${API_BASE}/api/chatbot/ask/`,
 };
+
+export const createDirectMessage = (token: string, studentId: number) =>
+  authedPost<ApiThread>(endpoints.directMessage(), token, { student_id: studentId });
+
+export const fetchDepartmentLecturers = (token: string, departmentId: number) =>
+    fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/lecturers/`, token);
 
 type ApiError = Error & { status?: number; details?: unknown };
 
@@ -718,5 +726,23 @@ export const fetchStudentRewards = (token: string, studentId: number) =>
 
 export const fetchRewardsLeaderboard = (token: string) =>
   fetchJson<ApiStudent[]>(endpoints.rewardsLeaderboard(), token);
+
+export const createDirectMessage = (token: string, studentId: number) =>
+  authedPost<ApiThread>(endpoints.directMessage(), token, { student_id: studentId });
+
+export const fetchDepartmentLecturers = (token: string, departmentId: number) =>
+    fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/lecturers/`, token);
+
+export const fetchDepartmentProgrammes = (token: string, departmentId: number) =>
+    fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/programmes/`, token);
+
+export const fetchDepartmentStudents = (token: string, departmentId: number) =>
+    fetchJson<any[]>(`${API_BASE}/api/core/api/departments/${departmentId}/students/`, token);
+
+export const fetchHodDepartment = (token: string, hodId: number) =>
+    fetchJson<any>(`${API_BASE}/api/core/api/hods/${hodId}/`, token);
+
+export const askChatbot = (token: string, query: string) =>
+    authedPost<{text: string, visual_cue: string | null}>(endpoints.askChatbot(), token, { query });
 
 

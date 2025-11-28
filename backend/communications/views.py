@@ -162,3 +162,37 @@ class MessageViewSet(viewsets.ModelViewSet):
         }
         sender_role = role_map.get(user.role, Message.SenderRoles.TEACHER)
         serializer.save(author=user, sender_role=sender_role)
+
+class CreateDirectMessageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        student_id = request.data.get('student_id')
+        lecturer = request.user
+
+        if not student_id:
+            return Response({"error": "student_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if lecturer.role != User.Roles.LECTURER:
+            return Response({"error": "Only lecturers can create direct messages"}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            student_user = User.objects.get(pk=student_id, role=User.Roles.STUDENT)
+        except User.DoesNotExist:
+            return Response({"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if a thread already exists between the lecturer and the student
+        thread = Thread.objects.filter(
+            teacher=lecturer,
+            student=student_user
+        ).first()
+
+        if not thread:
+            thread = Thread.objects.create(
+                teacher=lecturer,
+                student=student_user,
+                subject=f"Direct message between {lecturer.display_name} and {student_user.display_name}"
+            )
+        
+        serializer = ThreadSerializer(thread)
+        return Response(serializer.data, status=status.HTTP_200_OK)
