@@ -54,9 +54,13 @@ import {
   FinanceAlertsScreen,
   FinanceSettingsScreen,
   RewardsScreen,
+  NotificationsScreen,
+  LibraryScreen,
+  ChatroomScreen,
 } from '@screens/index';
 import { useAuth } from '@context/AuthContext';
 import type { Role } from '@app-types/roles';
+import { User } from '../types/models';
 import { FeatureDescriptor } from '@data/featureCatalog';
 
 export type RootStackParamList = {
@@ -68,6 +72,9 @@ export type RootStackParamList = {
   Profile: undefined;
   ForcePasswordChange: undefined;
   PasswordResetConfirm: undefined;
+  Notifications: undefined;
+  Library: undefined;
+  Chatroom: { chatroomId: number };
   StudentTimetable: undefined;
   StudentAssignments: undefined;
   StudentCommunicate: undefined;
@@ -176,6 +183,9 @@ export const AppNavigator = () => {
         <Stack.Screen name='Profile' component={ProfileScreen} />
         <Stack.Screen name='ForcePasswordChange' component={ForcePasswordChangeScreen} />
         <Stack.Screen name='PasswordResetConfirm' component={PasswordResetConfirmScreen} />
+        <Stack.Screen name='Notifications' component={NotificationsScreen} />
+        <Stack.Screen name='Library' component={LibraryScreen} />
+        <Stack.Screen name='Chatroom' component={ChatroomScreen} />
         <Stack.Screen name='StudentTimetable' component={StudentTimetableScreen} />
         <Stack.Screen name='StudentAssignments' component={StudentAssignmentsScreen} />
         <Stack.Screen name='StudentCommunicate' component={StudentCommunicateScreen} />

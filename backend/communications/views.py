@@ -2,16 +2,32 @@ from django.db.models import Q
 from rest_framework import permissions, viewsets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.exceptions import PermissionDenied
+from django_filters.rest_framework import DjangoFilterBackend
 
 from users.models import User
-from .models import Thread, Message
-from .serializers import ThreadSerializer, MessageSerializer
+from .models import Thread, Message, CourseChatroom, ChatMessage
+from .serializers import ThreadSerializer, MessageSerializer, CourseChatroomSerializer, ChatMessageSerializer
 from .serializers import SupportChatSessionSerializer, SupportChatMessageSerializer
 from .models import SupportChatSession, SupportChatMessage
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 import re
+
+
+class CourseChatroomViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CourseChatroom.objects.all()
+    serializer_class = CourseChatroomSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['unit']
+
+
+class ChatMessageViewSet(viewsets.ModelViewSet):
+    queryset = ChatMessage.objects.all()
+    serializer_class = ChatMessageSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author_user=self.request.user)
 
 
 def redact_pii(text: str) -> str:
@@ -21,6 +37,7 @@ def redact_pii(text: str) -> str:
     text = re.sub(r"[\w\.-]+@[\w\.-]+", "[redacted_email]", text)
     text = re.sub(r"\b\d{10,}\b", "[redacted_phone]", text)
     return text
+
 
 
 class SupportChatAPIView(APIView):

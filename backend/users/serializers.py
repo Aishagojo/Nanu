@@ -3,10 +3,17 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
-from learning.models import Course
-from .models import User, ParentStudentLink, UserProvisionRequest, FamilyEnrollmentIntent
+# TODO: Refactor to use Programme instead of Course
+# from learning.models import Programme
+from .models import User, ParentStudentLink, UserProvisionRequest, FamilyEnrollmentIntent, Student, Guardian, Lecturer
 
 username_validator = UnicodeUsernameValidator()
+
+
+class GuardianSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Guardian
+        fields = "__all__"
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -63,6 +70,35 @@ class UserProvisionSerializer(serializers.ModelSerializer):
         user.must_change_password = True
         user.save()
         return user
+
+
+class GuardianSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Guardian
+        fields = "__all__"
+
+
+class StudentSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            'user',
+            'programme',
+            'year',
+            'trimester',
+            'trimester_label',
+            'cohort_year',
+            'current_status',
+            'stars'
+        ]
+
+
+class LecturerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lecturer
+        fields = "__all__"
 
 
 class UserProvisionRequestSerializer(serializers.ModelSerializer):
@@ -142,13 +178,13 @@ class UserProvisionRequestSerializer(serializers.ModelSerializer):
 
 class ParentStudentLinkSerializer(serializers.ModelSerializer):
     parent = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=User.Roles.PARENT)
+        queryset=Guardian.objects.all()
     )
     student = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=User.Roles.STUDENT)
+        queryset=Student.objects.all()
     )
-    parent_detail = UserSerializer(source="parent", read_only=True)
-    student_detail = UserSerializer(source="student", read_only=True)
+    parent_detail = UserSerializer(source="parent.user", read_only=True)
+    student_detail = UserSerializer(source="student.user", read_only=True)
 
     class Meta:
         model = ParentStudentLink
@@ -195,6 +231,13 @@ class FamilyEnrollmentSerializer(serializers.Serializer):
     parent = FamilyAccountSerializer()
     relationship = serializers.CharField(required=False, allow_blank=True)
     fee_item = FamilyFeeSerializer(required=False)
+
+    # Academic details
+    programme = serializers.IntegerField()
+    year = serializers.IntegerField()
+    trimester = serializers.IntegerField()
+    trimester_label = serializers.CharField()
+    cohort_year = serializers.IntegerField()
 
     def validate(self, attrs):
         passcode = attrs.get("records_passcode")
@@ -254,24 +297,25 @@ class FamilyEnrollmentSerializer(serializers.Serializer):
         course_codes = student_data.pop("course_codes", [])
         requested_codes = set(course_codes)
 
-        if course_ids:
-            found_by_id = list(Course.objects.filter(id__in=course_ids))
-            missing = set(course_ids) - {course.id for course in found_by_id}
-            if missing:
-                raise serializers.ValidationError(
-                    {"student": f"Course IDs not found: {', '.join(map(str, missing))}"}
-                )
-            requested_codes.update(course.code for course in found_by_id)
+        # TODO: Refactor this section to use Programme instead of Course
+        # if course_ids:
+        #     found_by_id = list(Course.objects.filter(id__in=course_ids))
+        #     missing = set(_ids) - {course.id for course in found_by_id}
+        #     if missing:
+        #         raise serializers.ValidationError(
+        #             {"student": f"Course IDs not found: {', '.join(map(str, missing))}"}
+        #         )
+        #     requested_codes.update(course.code for course in found_by_id)
 
-        if course_codes:
-            found_by_code = set(
-                Course.objects.filter(code__in=course_codes).values_list("code", flat=True)
-            )
-            missing_codes = set(course_codes) - found_by_code
-            if missing_codes:
-                raise serializers.ValidationError(
-                    {"student": f"Course codes not found: {', '.join(sorted(missing_codes))}"}
-                )
+        # if course_codes:
+        #     found_by_code = set(
+        #         Course.objects.filter(code__in=course_codes).values_list("code", flat=True)
+        #     )
+        #     missing_codes = set(course_codes) - found_by_code
+        #     if missing_codes:
+        #         raise serializers.ValidationError(
+        #             {"student": f"Course codes not found: {', '.join(sorted(missing_codes))}"}
+        #         )
 
         student_password = student_data.pop("password")
         parent_password = parent_data.pop("password")
@@ -306,6 +350,11 @@ class FamilyEnrollmentSerializer(serializers.Serializer):
                     fee_title=fee_input.get("title", "") or "",
                     fee_amount=fee_input.get("amount"),
                     fee_due_date=fee_input.get("due_date"),
+                    programme_id=validated_data.get("programme"),
+                    year=validated_data.get("year"),
+                    trimester=validated_data.get("trimester"),
+                    trimester_label=validated_data.get("trimester_label"),
+                    cohort_year=validated_data.get("cohort_year"),
                 )
         except IntegrityError:
             raise serializers.ValidationError(
@@ -318,6 +367,3 @@ class FamilyEnrollmentSerializer(serializers.Serializer):
             'parent_request': UserProvisionRequestSerializer(parent_request).data,
             'course_codes': list(dict.fromkeys(requested_codes)),
         }
-
-
-

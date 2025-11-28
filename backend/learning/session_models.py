@@ -3,11 +3,12 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from core.models import TimeStampedModel
+from users.models import Student
 
 
 class CourseSchedule(TimeStampedModel):
     """Course schedule with recurring sessions"""
-    course = models.ForeignKey('learning.Course', on_delete=models.CASCADE, related_name='schedules')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.CASCADE, related_name='schedules')
     term = models.CharField(max_length=20)
     day_of_week = models.PositiveSmallIntegerField(help_text="0=Monday, 6=Sunday")
     start_time = models.TimeField()
@@ -21,7 +22,7 @@ class CourseSchedule(TimeStampedModel):
 
     def __str__(self):
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        return f"{self.course.code} - {days[self.day_of_week]} at {self.start_time}"
+        return f"{self.programme.code} - {days[self.day_of_week]} at {self.start_time}"
 
 
 class CourseSession(TimeStampedModel):
@@ -43,7 +44,7 @@ class CourseSession(TimeStampedModel):
         ordering = ['-date', '-actual_start']
         
     def __str__(self):
-        return f"{self.schedule.course.code} - {self.date}"
+        return f"{self.schedule.programme.code} - {self.date}"
 
     def clean(self):
         if self.actual_end and self.actual_start and self.actual_end < self.actual_start:
@@ -52,9 +53,8 @@ class CourseSession(TimeStampedModel):
 
 class VoiceAttendance(TimeStampedModel):
     """Voice-based attendance records"""
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 
-                              related_name='voice_attendance',
-                              limit_choices_to={'role': 'student'})
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, 
+                              related_name='voice_attendance')
     session = models.ForeignKey(CourseSession, on_delete=models.CASCADE, related_name='voice_attendance')
     voice_recording = models.FileField(upload_to='attendance/voice/', blank=True)
     transcript = models.TextField(blank=True)
@@ -68,15 +68,14 @@ class VoiceAttendance(TimeStampedModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f"{self.student.username} - {self.session.date}"
+        return f"{self.student.user.username} - {self.session.date}"
 
 
 class SessionReminder(TimeStampedModel):
     """Automated session reminders with voice support"""
     session = models.ForeignKey(CourseSession, on_delete=models.CASCADE, related_name='reminders')
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name='session_reminders',
-                              limit_choices_to={'role': 'student'})
+    student = models.ForeignKey(Student, on_delete=models.CASCADE,
+                              related_name='session_reminders')
     scheduled_for = models.DateTimeField()
     sent_at = models.DateTimeField(null=True, blank=True)
     acknowledged_at = models.DateTimeField(null=True, blank=True)
@@ -92,7 +91,7 @@ class SessionReminder(TimeStampedModel):
         unique_together = ['session', 'student', 'reminder_type']
         
     def __str__(self):
-        return f"{self.student.username} - {self.session.date} ({self.reminder_type})"
+        return f"{self.student.user.username} - {self.session.date} ({self.reminder_type})"
         
     def clean(self):
         if self.scheduled_for and self.scheduled_for > self.session.date:

@@ -7,20 +7,23 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 from core.models import AuditLog
-from finance.models import FeeItem
-from learning.models import Course, Enrollment
+# from finance.models import FeeItem
+# from learning.models import Course, Enrollment
 
-from .models import User, ParentStudentLink, UserProvisionRequest, FamilyEnrollmentIntent
-from .serializers import (
+from finance.models import FinanceStatus, Payment
+from learning.models import Registration, CurriculumUnit
+from ..models import User, ParentStudentLink, UserProvisionRequest, FamilyEnrollmentIntent, Student, Guardian, Lecturer, HOD, Admin, RecordsOfficer, FinanceOfficer
+from ..serializers import (
     UserSerializer,
     ParentStudentLinkSerializer,
     UserProvisionSerializer,
     UserProvisionRequestSerializer,
     FamilyEnrollmentSerializer,
 )
-from .notifications import notify_provision_request_approval
+from ..notifications import notify_provision_request_approval
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -120,6 +123,32 @@ class UserProvisionRequestViewSet(viewsets.ModelViewSet):
         serializer = UserProvisionSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Create the role-specific profile
+        if provision_request.role == User.Roles.STUDENT and intent:
+            Student.objects.create(
+                user=user,
+                programme=intent.programme,
+                year=intent.year,
+                trimester=intent.trimester,
+                trimester_label=intent.trimester_label,
+                cohort_year=intent.cohort_year,
+            )
+        elif provision_request.role == User.Roles.PARENT:
+            Guardian.objects.create(user=user)
+        elif provision_request.role == User.Roles.LECTURER:
+            # Note: department is not yet handled in the intent
+            Lecturer.objects.create(user=user)
+        elif provision_request.role == User.Roles.HOD:
+            # Note: department is not yet handled in the intent
+            HOD.objects.create(user=user)
+        elif provision_request.role == User.Roles.ADMIN:
+            Admin.objects.create(user=user)
+        elif provision_request.role == User.Roles.RECORDS:
+            RecordsOfficer.objects.create(user=user)
+        elif provision_request.role == User.Roles.FINANCE:
+            FinanceOfficer.objects.create(user=user)
+
         if desired_password:
             user.set_password(desired_password)
             user.must_change_password = False
@@ -197,33 +226,48 @@ class UserProvisionRequestViewSet(viewsets.ModelViewSet):
                 parent_updates.append("display_name")
             if parent_updates:
                 parent_user.save(update_fields=list(set(parent_updates)))
-            link, created = ParentStudentLink.objects.get_or_create(
-                parent=parent_user,
-                student=student_user,
-                defaults={"relationship": intent.relationship},
-            )
-            if not created and intent.relationship and link.relationship != intent.relationship:
-                link.relationship = intent.relationship
-                link.save(update_fields=["relationship"])
+            
+            try:
+                student_profile = student_user.student_profile
+                parent_profile = parent_user.guardian_profile
+                link, created = ParentStudentLink.objects.get_or_create(
+                    parent=parent_profile,
+                    student=student_profile,
+                    defaults={"relationship": intent.relationship},
+                )
+                if not created and intent.relationship and link.relationship != intent.relationship:
+                    link.relationship = intent.relationship
+                    link.save(update_fields=["relationship"])
+            except (Student.DoesNotExist, Guardian.DoesNotExist):
+                # This should not happen if the profiles were created correctly in the approve method
+                pass
 
+        # Create registrations for the student
         for code in intent.course_codes:
-            course = Course.objects.filter(code__iexact=code).first()
-            if not course:
+            unit = CurriculumUnit.objects.filter(code__iexact=code).first()
+            if not unit:
                 continue
-            enrollment, created = Enrollment.objects.get_or_create(
-                student=student_user,
-                course=course,
-                defaults={"active": True},
+            Registration.objects.get_or_create(
+                student=student_user.student_profile,
+                unit=unit,
+                academic_year=intent.year,
+                trimester=intent.trimester,
             )
-            if not created and not enrollment.active:
-                enrollment.active = True
-                enrollment.save(update_fields=["active"])
 
+        # Create finance records for the student
         if intent.fee_amount:
-            FeeItem.objects.get_or_create(
-                student=student_user,
-                title=intent.fee_title or "Tuition",
-                defaults={"amount": intent.fee_amount, "due_date": intent.fee_due_date},
+            FinanceStatus.objects.create(
+                student=student_user.student_profile,
+                academic_year=intent.year,
+                trimester=intent.trimester,
+                total_due=intent.fee_amount,
+            )
+            Payment.objects.create(
+                student=student_user.student_profile,
+                amount=intent.fee_amount,
+                paid_at=timezone.now(),
+                method="System Enrollment",
+                ref=f"ENROLL-{intent.id}",
             )
 
         intent.delete()
@@ -271,7 +315,7 @@ def me(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([AllowAny])
 def password_reset_request(request):
     identifier = request.data.get("username") or request.data.get("email")
     if not identifier:
@@ -310,7 +354,7 @@ def password_reset_request(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.AllowAny])
+@permission_classes([AllowAny])
 def password_reset_confirm(request):
     username = request.data.get("username")
     token = request.data.get("token")

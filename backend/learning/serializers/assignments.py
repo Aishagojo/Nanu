@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from learning.models import Assignment, Registration
+from learning.models import Assignment, Registration, Submission
 
 
 class AssignmentSerializer(serializers.ModelSerializer):
@@ -24,6 +24,12 @@ class AssignmentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["owner_user", "created_at", "updated_at"]
+
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = "__all__"
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

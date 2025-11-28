@@ -200,6 +200,9 @@ export const endpoints = {
   transcribe: () => `${API_BASE}/api/core/transcribe/`,
   resources: () => `${API_BASE}/api/repository/resources/`,
   familyEnroll: () => `${API_BASE}/api/users/enroll-family/`,
+  studentRewards: (studentId: number) => `${API_BASE}/api/rewards/student/${studentId}/`,
+  rewardsLeaderboard: () => `${API_BASE}/api/rewards/leaderboard/`,
+  awardMerit: () => `${API_BASE}/api/rewards/award/`,
 };
 
 type ApiError = Error & { status?: number; details?: unknown };
@@ -682,19 +685,38 @@ export const createResource = async (
       uri: fileUri,
       // backend does not care about the exact name, use a timestamp
       name: `upload-${Date.now()}`,
-      type: fileMimeType || 'application/octet-stream',
-    } as any);
-  }
-  const response = await fetch(endpoints.resources(), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: form,
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || response.statusText);
-  }
   return response.json();
 };
+
+export type Merit = {
+  id: number;
+  student: number;
+  awarded_by: ApiUser;
+  stars: number;
+  reason: string;
+  created_at: string;
+};
+
+export type StudentRewardsResponse = {
+  stars: number;
+  history: Merit[];
+};
+
+export type ApiStudent = {
+  user: ApiUser;
+  programme: number;
+  year: number;
+  trimester: number;
+  trimester_label: string;
+  cohort_year: number;
+  current_status: string;
+  stars: number;
+};
+
+export const fetchStudentRewards = (token: string, studentId: number) =>
+  fetchJson<StudentRewardsResponse>(endpoints.studentRewards(studentId), token);
+
+export const fetchRewardsLeaderboard = (token: string) =>
+  fetchJson<ApiStudent[]>(endpoints.rewardsLeaderboard(), token);
+
+

@@ -2,14 +2,14 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from core.models import TimeStampedModel
+from users.models import Student
+from repository.models import LibraryAsset
 
 
 class StudentProgress(TimeStampedModel):
     """Overall student progress tracking"""
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 
-                              related_name='progress_records',
-                              limit_choices_to={'role': 'student'})
-    course = models.ForeignKey('learning.Course', on_delete=models.CASCADE, related_name='student_progress')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='progress_records')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.CASCADE, related_name='student_progress')
     term = models.CharField(max_length=20)
     
     # Overall progress
@@ -34,19 +34,17 @@ class StudentProgress(TimeStampedModel):
     latest_feedback_transcript = models.TextField(blank=True)
     
     class Meta:
-        unique_together = ['student', 'course', 'term']
-        ordering = ['-term', 'student__username']
+        unique_together = ['student', 'programme', 'term']
+        ordering = ['-term', 'student__user__username']
         
     def __str__(self):
-        return f"{self.student.username} - {self.course.code} ({self.term})"
+        return f"{self.student.user.username} - {self.programme.code} ({self.term})"
 
 
 class ActivityLog(TimeStampedModel):
     """Detailed activity tracking"""
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 
-                              related_name='activity_logs',
-                              limit_choices_to={'role': 'student'})
-    course = models.ForeignKey('learning.Course', on_delete=models.CASCADE, related_name='activity_logs')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='activity_logs')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.CASCADE, related_name='activity_logs')
     
     # Activity details
     activity_type = models.CharField(max_length=50, choices=[
@@ -58,7 +56,7 @@ class ActivityLog(TimeStampedModel):
         ('reward_claim', 'Reward Claim'),
     ])
     duration_minutes = models.PositiveIntegerField(null=True, blank=True)
-    resource = models.ForeignKey('repository.Resource', null=True, blank=True, 
+    resource = models.ForeignKey(LibraryAsset, null=True, blank=True, 
                                on_delete=models.SET_NULL, related_name='activity_logs')
     details = models.JSONField(null=True, blank=True, help_text="Additional activity details")
     
@@ -85,17 +83,16 @@ class ActivityLog(TimeStampedModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f"{self.student.username} - {self.activity_type} ({self.created_at})"
+        return f"{self.student.user.username} - {self.activity_type} ({self.created_at})"
 
 
 class CompletionRecord(TimeStampedModel):
     """Track completion of specific course units and resources"""
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name='completion_records',
-                              limit_choices_to={'role': 'student'})
-    course = models.ForeignKey('learning.Course', on_delete=models.CASCADE, related_name='completion_records')
-    unit = models.ForeignKey('learning.Unit', on_delete=models.CASCADE, related_name='completion_records')
-    resource = models.ForeignKey('repository.Resource', null=True, blank=True,
+    student = models.ForeignKey(Student, on_delete=models.CASCADE,
+                              related_name='completion_records')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.CASCADE, related_name='completion_records')
+    unit = models.ForeignKey('learning.CurriculumUnit', on_delete=models.CASCADE, related_name='completion_records')
+    resource = models.ForeignKey(LibraryAsset, null=True, blank=True,
                                on_delete=models.SET_NULL, related_name='completion_records')
     
     # Completion details
@@ -119,8 +116,8 @@ class CompletionRecord(TimeStampedModel):
     reflection_transcript = models.TextField(blank=True)
     
     class Meta:
-        unique_together = ['student', 'course', 'unit', 'resource']
+        unique_together = ['student', 'programme', 'unit', 'resource']
         ordering = ['-completed_at']
         
     def __str__(self):
-        return f"{self.student.username} - {self.unit.title}"
+        return f"{self.student.user.username} - {self.unit.title}"

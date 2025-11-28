@@ -2,8 +2,23 @@ from rest_framework import serializers
 
 from users.models import User
 from users.serializers import UserSerializer
-from .models import Thread, Message
+from .models import Thread, Message, CourseChatroom, ChatMessage
 from .models import SupportChatSession, SupportChatMessage
+
+
+class CourseChatroomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseChatroom
+        fields = "__all__"
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    author_detail = UserSerializer(source="author_user", read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = ["id", "chatroom", "author_user", "author_detail", "message", "created_at"]
+        read_only_fields = ["id", "author_user", "author_detail", "created_at"]
 
 
 class MessageSerializer(serializers.ModelSerializer):

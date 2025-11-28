@@ -48,9 +48,9 @@ Nanu is the voice-first OS powering inclusive education. Built for high-needs st
 - **Librarian workflow** is ready via the `librarian` role and repository endpoints, ensuring curated lists stay accessible and policy-compliant.
 
 ### Rewards & Motivation
-- **Rewards Hub screen** shows token balance, streak medals, featured rewards, earning tips, and a HashPack wallet CTA. Data is mocked locally until the rewards service ships, but the navigation, modal flows, and cross-role entry points are in place.
+- **Rewards Hub screen** shows star balance, streak medals, featured rewards, and earning tips. Data is mocked locally until the rewards service ships, but the navigation, modal flows, and cross-role entry points are in place.
 - **Dashboards + bottom bar shortcuts** make rewards one tap away for students, parents, and lecturers.
-- **Roadmap-ready backend**: upcoming `rewards` app will log earning events, mint Hedera tokens, and drive claims (see roadmap below).
+- **Roadmap-ready backend**: an upcoming `rewards` app will log earning events, manage star balances, and determine semester leaders.
 
 ### Notifications & Guided Actions
 - **Notification bell** displays unread counts, routes users to exact screens, and lets them mark everything read. It relies on `NotificationContext` tracking thread IDs and resource IDs so duplicate banners are avoided.
@@ -148,12 +148,15 @@ Each account comes with sensible `is_staff` / `is_superuser` settings so you can
 
 ---
 
-## Rewards & Hedera Roadmap
-1. **Backend rewards service** " add a dedicated Django app for wallet linking, reward events, and Celery tasks that mint/transfer Hedera tokens.
-2. **HashPack connect flow** " implement QR/deeplink pairing, persist wallet metadata, and surface connection health inside the Rewards screen.
-3. **Automated earning rules** " emit reward events for attendance streaks, on-time assignments, login streaks, and lecturer commendations; notify stakeholders via the NotificationContext.
-4. **Claims + fulfillment** " let students request merch/fee credits, allow staff to approve or reject, and optionally burn or recycle Hedera tokens.
-5. **Chatbot integration** " route "How many tokens do I have? requests through Hedera Agent Kit so the helper can speak wallet balances and guide linking steps.
+## Merit-Based Rewards Roadmap
+1.  **Backend Rewards App**: Create a new `rewards` Django app to manage student merits.
+2.  **Data Models**: Implement `Merit` and `StudentProfile` models to track stars awarded for specific achievements and aggregate total stars per student.
+3.  **API Endpoints**:
+    -   `POST /api/rewards/award/`: For lecturers/staff to award stars to students for achievements (e.g., on-time assignments, class participation).
+    -   `GET /api/students/<id>/rewards/`: To fetch a student's star balance and history for their Rewards Hub.
+    -   `GET /api/rewards/leaderboard/`: To create a "Best Student of the Semester" ranking based on total stars.
+4.  **Automated Earning Rules**: Create logic to automatically award stars for achievements like perfect attendance, assignment submission streaks, etc.
+5.  **Frontend Integration**: Connect the `Rewards Hub` screen in the mobile app to the new API endpoints to display live star counts and history.
 
 ---
 

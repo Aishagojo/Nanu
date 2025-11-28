@@ -2,284 +2,163 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.db import transaction
-from django.db.models import Q, Count, Prefetch
+from django.db.models import Count
 from core.models import Department
-from learning.models import Course, Enrollment
-from django.core.exceptions import ValidationError
-from .serializers import (
-    DepartmentSerializer,
-    LecturerSerializer,
-    CourseAssignmentSerializer,
-    CourseAssignSerializer,
-    CourseCreateSerializer,
-    CourseEnrollSerializer,
-    StudentSummarySerializer,
-)
+from learning.models import Programme, Registration, CurriculumUnit, LecturerAssignment
+from finance.models import FinanceStatus, FinanceThreshold
+from users.models import HOD, Student
+from users.serializers import StudentSerializer
+from core.serializers import HODSerializer
 
 User = get_user_model()
+
+
+class HODViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = HOD.objects.all()
+    serializer_class = HODSerializer
+
+    @action(detail=True, methods=['get'])
+    def eligibles(self, request, pk=None):
+        hod = self.get_object()
+        department = hod.department
+
+        # Get programmes in the HOD's department
+        programmes = department.programmes.all()
+
+        # Get the latest finance thresholds for those programmes
+        thresholds = FinanceThreshold.objects.filter(programme__in=programmes).distinct('programme').order_by('programme', '-academic_year', '-trimester')
+
+        # Get students who have met the threshold
+        eligible_students = Student.objects.none()
+        for threshold in thresholds:
+            students_in_programme = Student.objects.filter(programme=threshold.programme)
+            finance_statuses = FinanceStatus.objects.filter(
+                student__in=students_in_programme,
+                academic_year=threshold.academic_year,
+                trimester=threshold.trimester,
+                total_paid__gte=threshold.threshold_amount
+            )
+            eligible_students |= students_in_programme.filter(id__in=finance_statuses.values('student_id'))
+
+        serializer = StudentSerializer(eligible_students, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def approve_registrations(self, request):
+        registration_ids = request.data.get('registration_ids', [])
+        registrations = Registration.objects.filter(id__in=registration_ids)
+        registrations.update(status=Registration.Status.APPROVED)
+        return Response({'detail': f'{len(registrations)} registrations approved.'})
+
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     """
     API endpoint for department management.
     Only HODs and admins can access.
     """
-    serializer_class = DepartmentSerializer
+    # serializer_class = DepartmentSerializer # Serializer to be updated
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser:
             return Department.objects.all()
-        return Department.objects.filter(head=user)
+        # Assuming HOD profile is linked from user
+        if hasattr(user, 'hod_profile') and user.hod_profile.department:
+            return Department.objects.filter(pk=user.hod_profile.department.pk)
+        return Department.objects.none()
 
     @action(detail=True, methods=['get'])
     def lecturers(self, request, pk=None):
         """Get all lecturers in this department"""
         department = self.get_object()
-        lecturers = (
-            User.objects.filter(role=User.Roles.LECTURER)
-            .filter(
-                Q(department=department)
-                | Q(taught_courses__department=department)
-            )
-            .distinct()
-            .annotate(
-                course_count=Count(
-                    'taught_courses',
-                    filter=Q(
-                        taught_courses__department=department,
-                        taught_courses__status__in=['draft', 'pending', 'approved', 'active'],
-                    ),
-                )
-            )
-            .prefetch_related(
-                Prefetch(
-                    'taught_courses',
-                    queryset=Course.objects.filter(department=department).order_by('code'),
-                    to_attr='department_courses',
-                )
-            )
+        lecturers = department.lecturer_set.all().annotate(
+            unit_count=Count('assignments')
         )
-        serializer = LecturerSerializer(lecturers, many=True)
-        return Response(serializer.data)
+        # serializer = LecturerSerializer(lecturers, many=True) # Serializer to be updated
+        # return Response(serializer.data)
+        return Response([{"id": l.user_id, "name": l.user.display_name, "unit_count": l.unit_count} for l in lecturers]) # Placeholder response
+
 
     @action(detail=True, methods=['get'])
-    def courses(self, request, pk=None):
-        """Get all courses in this department"""
+    def programmes(self, request, pk=None):
+        """Get all programmes in this department"""
         department = self.get_object()
-        courses = (
-            Course.objects.filter(department=department)
-            .select_related('lecturer', 'department')
-            .prefetch_related('enrollments__student')
+        programmes = (
+            Programme.objects.filter(department=department)
+            .prefetch_related('curriculum_units')
             .order_by('code')
         )
-        serializer = CourseAssignmentSerializer(courses, many=True)
-        return Response(serializer.data)
+        # serializer = ProgrammeAssignmentSerializer(programmes, many=True) # Serializer to be updated
+        # return Response(serializer.data)
+        return Response([{"id": p.id, "name": p.name} for p in programmes]) # Placeholder
 
-    @action(detail=True, methods=['post'])
-    def add_lecturer(self, request, pk=None):
-        """Add a new lecturer to the department"""
-        department = self.get_object()
-        data = request.data
-        required_fields = ['username', 'email', 'display_name', 'password']
-        missing = [field for field in required_fields if not data.get(field)]
-        if missing:
-            return Response(
-                {'error': f"Missing required fields: {', '.join(missing)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if User.objects.filter(username=data['username']).exists():
-            return Response(
-                {'error': 'Username already exists.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        user = User.objects.create_user(
-            username=data['username'],
-            email=data['email'],
-            password=data['password'],
-            display_name=data.get('display_name', ''),
-            role=User.Roles.LECTURER,
-            department=department,
-        )
-        serializer = LecturerSerializer(user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    # TODO: Refactor the logic below to align with new models and workflows
+    # The following actions are complex and depend on the new registration and assignment logic.
+    # They will be addressed after the initial model migration is successful.
 
-    @action(detail=True, methods=['post'])
-    def assign_course(self, request, pk=None):
-        """Assign a course to a lecturer"""
-        department = self.get_object()
-        serializer = CourseAssignSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        course_id = serializer.validated_data['course_id']
-        lecturer_id = serializer.validated_data['lecturer_id']
-        try:
-            course = Course.objects.select_related('department').get(pk=course_id, department=department)
-        except Course.DoesNotExist:
-            return Response(
-                {'error': 'Course not found in this department'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        try:
-            lecturer = User.objects.get(pk=lecturer_id, role=User.Roles.LECTURER)
-        except User.DoesNotExist:
-            return Response({'error': 'Lecturer not found'}, status=status.HTTP_404_NOT_FOUND)
-        if lecturer.department_id and lecturer.department_id != department.id:
-            return Response(
-                {'error': 'Lecturer belongs to another department'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        course.lecturer = lecturer
-        try:
-            course.save()
-        except ValidationError as exc:
-            return Response(exc.message_dict or exc.messages, status=status.HTTP_400_BAD_REQUEST)
-        if lecturer.department_id != department.id:
-            lecturer.department = department
-            lecturer.save(update_fields=['department'])
-        return Response(CourseAssignmentSerializer(course).data)
+    # @action(detail=True, methods=['post'])
+    # def add_lecturer(self, request, pk=None):
+    #     ...
 
-    @action(detail=True, methods=['post'])
-    def approve_course(self, request, pk=None):
-        """Approve a course for the department"""
-        department = self.get_object()
-        course_id = request.data.get('course_id')
+    # @action(detail=True, methods=['post'])
+    # def assign_lecturer_to_unit(self, request, pk=None):
+    #     ...
 
-        try:
-            course = Course.objects.get(pk=course_id, department=department)
-            course.status = 'approved'
-            course.save()
-            return Response({'status': 'Course approved successfully'})
-        except Course.DoesNotExist:
-            return Response(
-                {'error': 'Course not found in this department'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+    # @action(detail=True, methods=['post'])
+    # def approve_registration(self, request, pk=None):
+    #     ...
 
     @action(detail=True, methods=['get'])
     def students(self, request, pk=None):
-        """List students enrolled in courses within this department"""
+        """List students registered for units within this department's programmes"""
         department = self.get_object()
-        enrollments = (
-            Enrollment.objects.filter(course__department=department, active=True)
-            .select_related('student', 'course')
-            .order_by('student__username')
+        registrations = (
+            Registration.objects.filter(unit__programme__department=department)
+            .select_related('student__user', 'unit')
+            .order_by('student__user__username')
         )
         student_map = {}
-        for enrollment in enrollments:
-            student = enrollment.student
+        for reg in registrations:
+            student_profile = reg.student
+            user = student_profile.user
             entry = student_map.setdefault(
-                student.id,
+                student_profile.user_id,
                 {
-                    'id': student.id,
-                    'username': student.username,
-                    'display_name': student.display_name or student.username,
-                    'course_ids': set(),
-                    'course_codes': [],
+                    'id': user.id,
+                    'username': user.username,
+                    'display_name': user.display_name or user.username,
+                    'unit_ids': set(),
+                    'unit_codes': [],
                 },
             )
-            entry['course_ids'].add(enrollment.course_id)
-            code = enrollment.course.code or enrollment.course.name
-            if code and code not in entry['course_codes']:
-                entry['course_codes'].append(code)
+            entry['unit_ids'].add(reg.unit_id)
+            code = reg.unit.code or reg.unit.title
+            if code not in entry['unit_codes']:
+                entry['unit_codes'].append(code)
+        
         results = [
             {
                 'id': data['id'],
                 'username': data['username'],
                 'display_name': data['display_name'],
-                'course_ids': list(data['course_ids']),
-                'course_codes': data['course_codes'],
+                'unit_ids': list(data['unit_ids']),
+                'unit_codes': data['unit_codes'],
             }
             for data in student_map.values()
         ]
-        serializer = StudentSummarySerializer(results, many=True)
-        return Response(serializer.data)
+        # serializer = StudentSummarySerializer(results, many=True) # Serializer to be updated
+        # return Response(serializer.data)
+        return Response(results) # Placeholder response
 
-    @action(detail=True, methods=['post'])
-    def create_course(self, request, pk=None):
-        """Create a new course within the department"""
-        department = self.get_object()
-        serializer = CourseCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        lecturer = None
-        if data.get('lecturer_id'):
-            try:
-                lecturer = User.objects.get(pk=data['lecturer_id'], role=User.Roles.LECTURER)
-            except User.DoesNotExist:
-                return Response({'error': 'Lecturer not found'}, status=status.HTTP_404_NOT_FOUND)
-            if lecturer.department_id and lecturer.department_id != department.id:
-                return Response(
-                    {'error': 'Lecturer belongs to another department'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        course = Course(
-            code=data['code'],
-            name=data['name'],
-            description=data.get('description', ''),
-            department=department,
-            lecturer=lecturer,
-            status=data.get('status') or 'draft',
-        )
-        try:
-            course.save()
-        except ValidationError as exc:
-            return Response(exc.message_dict or exc.messages, status=status.HTTP_400_BAD_REQUEST)
-        if lecturer and lecturer.department_id != department.id:
-            lecturer.department = department
-            lecturer.save(update_fields=['department'])
-        student_ids = data.get('student_ids') or []
-        if student_ids:
-            with transaction.atomic():
-                for student_id in student_ids:
-                    try:
-                        student = User.objects.get(pk=student_id, role=User.Roles.STUDENT)
-                    except User.DoesNotExist:
-                        transaction.set_rollback(True)
-                        return Response(
-                            {'error': f'Student {student_id} not found'},
-                            status=status.HTTP_404_NOT_FOUND,
-                        )
-                    Enrollment.objects.get_or_create(student=student, course=course, defaults={'active': True})
-        course.refresh_from_db()
-        return Response(CourseAssignmentSerializer(course).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['post'])
-    def enroll_students(self, request, pk=None):
-        """Enroll students into a course"""
-        department = self.get_object()
-        serializer = CourseEnrollSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        course_id = serializer.validated_data['course_id']
-        student_ids = serializer.validated_data['student_ids']
-        try:
-            course = Course.objects.get(pk=course_id, department=department)
-        except Course.DoesNotExist:
-            return Response(
-                {'error': 'Course not found in this department'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        with transaction.atomic():
-            for student_id in student_ids:
-                try:
-                    student = User.objects.get(pk=student_id, role=User.Roles.STUDENT)
-                except User.DoesNotExist:
-                    transaction.set_rollback(True)
-                    return Response(
-                        {'error': f'Student {student_id} not found'},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-                enrollment, _ = Enrollment.objects.get_or_create(
-                    student=student,
-                    course=course,
-                    defaults={'active': True},
-                )
-                if not enrollment.active:
-                    enrollment.active = True
-                    enrollment.save(update_fields=['active'])
-        course.refresh_from_db()
-        serializer = CourseAssignmentSerializer(course)
-        return Response(serializer.data)
+    # @action(detail=True, methods=['post'])
+    # def create_programme(self, request, pk=None):
+    #     ...
+
+    # @action(detail=True, methods=['post'])
+    # def register_students_for_unit(self, request, pk=None):
+        # ...
 
 class HodDashboardViewSet(viewsets.ViewSet):
     """
@@ -290,22 +169,18 @@ class HodDashboardViewSet(viewsets.ViewSet):
 
     def list(self, request):
         user = request.user
-        if not user.is_staff or (not user.is_superuser and not hasattr(user, 'department_headed')):
+        if not user.is_staff or (not user.is_superuser and not hasattr(user, 'hod_profile')):
             return Response(
                 {'error': 'Not authorized'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Get department stats
-        departments = Department.objects.filter(head=user) if not user.is_superuser else Department.objects.all()
+        departments = Department.objects.filter(head_of_department__user=user) if not user.is_superuser else Department.objects.all()
         
         dashboard_data = []
         for dept in departments:
-            courses = Course.objects.filter(department=dept)
-            lecturers = User.objects.filter(
-                role='lecturer',
-                taught_courses__department=dept
-            ).distinct()
+            programmes = Programme.objects.filter(department=dept)
+            lecturers = dept.lecturer_set.all()
             
             dept_data = {
                 'department': {
@@ -314,20 +189,18 @@ class HodDashboardViewSet(viewsets.ViewSet):
                     'code': dept.code,
                 },
                 'statistics': {
-                    'total_courses': courses.count(),
-                    'active_courses': courses.filter(status='active').count(),
-                    'pending_courses': courses.filter(status='pending').count(),
+                    'total_programmes': programmes.count(),
                     'total_lecturers': lecturers.count(),
                 },
-                'recent_courses': CourseAssignmentSerializer(
-                    courses.order_by('-created_at')[:5],
-                    many=True
-                ).data,
-                'recent_lecturers': LecturerSerializer(
-                    lecturers.order_by('-date_joined')[:5],
-                    many=True
-                ).data,
+                # 'recent_programmes': ProgrammeAssignmentSerializer(
+                #     programmes.order_by('-created_at')[:5],
+                #     many=True
+                # ).data, # Serializer to be updated
+                # 'recent_lecturers': LecturerSerializer(
+                #     lecturers.order_by('-user__date_joined')[:5],
+                #     many=True
+                # ).data, # Serializer to be updated
             }
             dashboard_data.append(dept_data)
             
-        return Response(dashboard_data)
+        return Response(dashboard.data) # Placeholder response

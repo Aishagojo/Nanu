@@ -1,8 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '@theme/index';
 import { VoiceButton } from '@components/index';
+import { useAuth } from '@context/AuthContext';
+import { fetchStudentRewards, fetchRewardsLeaderboard, Merit, ApiStudent } from '@services/api';
 
 const MAX_CLAIMS_PER_TERM = 3;
 const REWARD_POINT_TARGET = 300;
@@ -15,45 +17,6 @@ type RewardTile = {
   image: string;
   type: 'merch' | 'fee' | 'badge' | 'experience';
 };
-
-type RewardAction = {
-  id: string;
-  title: string;
-  description: string;
-  points: number;
-  icon: keyof typeof Ionicons.glyphMap;
-};
-
-const rewardActions: RewardAction[] = [
-  {
-    id: 'attendance',
-    title: 'On-time attendance',
-    description: 'Mark present within 5 minutes.',
-    points: 15,
-    icon: 'calendar',
-  },
-  {
-    id: 'assignment',
-    title: 'Early assignment',
-    description: 'Submit work a day early.',
-    points: 10,
-    icon: 'alarm',
-  },
-  {
-    id: 'participation',
-    title: 'Class participation',
-    description: 'Share a helpful tip in class chat.',
-    points: 6,
-    icon: 'chatbubble',
-  },
-  {
-    id: 'community',
-    title: 'Community helper',
-    description: 'Assist a peer or share resources.',
-    points: 8,
-    icon: 'people',
-  },
-];
 
 const sampleRewards: RewardTile[] = [
   {
@@ -74,101 +37,62 @@ const sampleRewards: RewardTile[] = [
       'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=60',
     type: 'fee',
   },
-  {
-    id: 'badge',
-    title: 'Streak Champion Badge',
-    subtitle: 'Unlocked at 3 weeks on-time',
-    cost: 80,
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=60',
-    type: 'badge',
-  },
-  {
-    id: 'trip',
-    title: 'Field Trip Pass',
-    subtitle: 'Exclusive tourism visit',
-    cost: 300,
-    image:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=60',
-    type: 'experience',
-  },
 ];
 
 export const RewardsScreen: React.FC = () => {
+  const { state: authState } = useAuth();
   const [selectedReward, setSelectedReward] = useState<RewardTile | null>(null);
-  const [tokenBalance, setTokenBalance] = useState(240);
-  const [lifetimePoints, setLifetimePoints] = useState(180);
+  const [starBalance, setStarBalance] = useState(0);
+  const [lifetimePoints, setLifetimePoints] = useState(0);
   const [termClaimsUsed, setTermClaimsUsed] = useState(0);
-  const [actionFeed, setActionFeed] = useState<
-    Array<{ id: string; title: string; points: number; timestamp: number }>
-  >([]);
+  const [actionFeed, setActionFeed] = useState<Merit[]>([]);
+  const [leaderboard, setLeaderboard] = useState<ApiStudent[]>([]);
 
-  const streak = 5;
+  useEffect(() => {
+    if (authState.accessToken && authState.user) {
+      if (authState.user.role === 'student') {
+        fetchStudentRewards(authState.accessToken, authState.user.id)
+          .then((data) => {
+            setStarBalance(data.stars);
+            setLifetimePoints(data.stars); // Assuming lifetime points is the total stars
+            setActionFeed(data.history);
+          })
+          .catch((err) => console.error('Failed to fetch student rewards:', err));
+      }
+
+      fetchRewardsLeaderboard(authState.accessToken)
+        .then(setLeaderboard)
+        .catch((err) => console.error('Failed to fetch leaderboard:', err));
+    }
+  }, [authState.accessToken, authState.user]);
+
+  const streak = 5; // This will also come from the backend
 
   const tier = useMemo(() => {
-    if (tokenBalance >= 450) {
-      return 'Platinum';
-    }
-    if (tokenBalance >= 300) {
-      return 'Gold';
-    }
-    if (tokenBalance >= 150) {
-      return 'Silver';
-    }
+    if (starBalance >= 450) return 'Platinum';
+    if (starBalance >= 300) return 'Gold';
+    if (starBalance >= 150) return 'Silver';
     return 'Bronze';
-  }, [tokenBalance]);
+  }, [starBalance]);
 
   const progressPoints = lifetimePoints % REWARD_POINT_TARGET;
   const progressPercent = Math.min(Math.round((progressPoints / REWARD_POINT_TARGET) * 100), 100);
   const claimsUnlocked = Math.floor(lifetimePoints / REWARD_POINT_TARGET);
   const claimsRemaining = Math.max(MAX_CLAIMS_PER_TERM - termClaimsUsed, 0);
   const claimsAvailable = Math.max(Math.min(claimsUnlocked - termClaimsUsed, claimsRemaining), 0);
-  const canRedeemNow = claimsAvailable > 0;
-
-  const logAction = useCallback((action: RewardAction) => {
-    setLifetimePoints((prev) => prev + action.points);
-    setTokenBalance((prev) => prev + action.points);
-    setActionFeed((prev) =>
-      [
-        {
-          id: `${action.id}-${Date.now()}`,
-          title: action.title,
-          points: action.points,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 4),
-    );
-  }, []);
 
   const handleRewardClaim = useCallback(() => {
-    if (!selectedReward) {
-      return;
-    }
-    if (termClaimsUsed >= MAX_CLAIMS_PER_TERM) {
-      Alert.alert('Limit reached', 'Reward claims reopen next term.');
-      return;
-    }
-    if (!canRedeemNow) {
-      Alert.alert('Keep earning', 'Fill the progress bar to unlock a reward slot.');
-      return;
-    }
-    if (tokenBalance < selectedReward.cost) {
-      Alert.alert('Not enough points', 'Log more actions to reach this reward cost.');
-      return;
-    }
-    setTokenBalance((prev) => prev - selectedReward.cost);
-    setTermClaimsUsed((prev) => prev + 1);
-    setSelectedReward(null);
-    Alert.alert('Reward claimed', 'Finance will validate and schedule the delivery.');
-  }, [selectedReward, canRedeemNow, tokenBalance, termClaimsUsed]);
+    if (!selectedReward) return;
+    // TODO: Implement API call to claim a reward
+    Alert.alert('Coming Soon!', 'Reward claiming functionality is not yet implemented.');
+  }, [selectedReward]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.heroCard}>
         <View style={styles.heroText}>
           <Text style={styles.heroLabel}>Current Balance</Text>
-          <Text style={styles.heroValue}>{tokenBalance} EDUReward</Text>
+          <Text style={styles.heroValue}>{starBalance} Stars</Text>
           <Text style={styles.heroTier}>Tier: {tier}</Text>
         </View>
         <View style={styles.heroBadge}>
@@ -196,33 +120,20 @@ export const RewardsScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.walletCard}>
-        <View>
-          <Text style={styles.cardTitle}>Connect HashPack Wallet</Text>
-          <Text style={styles.cardSubtitle}>
-            Link your wallet to receive tokens instantly and redeem prizes.
-          </Text>
-        </View>
-        <VoiceButton label='Connect' onPress={() => {}} />
-      </View>
-
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Log actions</Text>
-        <Text style={styles.sectionLink}>Each action awards fixed points</Text>
+        <Text style={styles.sectionTitle}>Leaderboard</Text>
       </View>
-      <View style={styles.actionList}>
-        {rewardActions.map((action) => (
-          <View key={action.id} style={styles.actionCard}>
-            <View style={styles.actionIcon}>
-              <Ionicons name={action.icon} size={24} color={palette.primary} />
+      <View style={styles.feedCard}>
+        {leaderboard.length === 0 ? (
+          <Text style={styles.helperText}>Leaderboard is loading...</Text>
+        ) : (
+          leaderboard.map((student, index) => (
+            <View key={student.user.id} style={styles.feedRow}>
+              <Text style={styles.feedTitle}>{index + 1}. {student.user.display_name}</Text>
+              <Text style={styles.feedPoints}>{student.stars} pts</Text>
             </View>
-            <View style={styles.actionBody}>
-              <Text style={styles.actionTitle}>{action.title}</Text>
-              <Text style={styles.actionSubtitle}>{action.description}</Text>
-            </View>
-            <VoiceButton label={`+${action.points}`} onPress={() => logAction(action)} />
-          </View>
-        ))}
+          ))
+        )}
       </View>
 
       <View style={styles.sectionHeader}>
@@ -252,16 +163,16 @@ export const RewardsScreen: React.FC = () => {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent actions</Text>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
       </View>
       <View style={styles.feedCard}>
         {actionFeed.length === 0 ? (
-          <Text style={styles.helperText}>Log an action to start filling the bar.</Text>
+          <Text style={styles.helperText}>Your recent rewards will appear here.</Text>
         ) : (
           actionFeed.map((item) => (
             <View key={item.id} style={styles.feedRow}>
-              <Text style={styles.feedTitle}>{item.title}</Text>
-              <Text style={styles.feedPoints}>+{item.points} pts</Text>
+              <Text style={styles.feedTitle}>{item.reason}</Text>
+              <Text style={styles.feedPoints}>+{item.stars} pts</Text>
             </View>
           ))
         )}
@@ -273,7 +184,7 @@ export const RewardsScreen: React.FC = () => {
             <Image source={{ uri: selectedReward.image }} style={styles.modalImage} />
             <Text style={styles.modalTitle}>{selectedReward.title}</Text>
             <Text style={styles.modalSubtitle}>{selectedReward.subtitle}</Text>
-            <Text style={styles.modalCost}>{selectedReward.cost} EDUReward</Text>
+            <Text style={styles.modalCost}>{selectedReward.cost} Stars</Text>
             <View style={styles.modalActions}>
               <VoiceButton
                 label='Claim'
@@ -375,28 +286,6 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: palette.textSecondary,
   },
-  walletCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 24,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  cardTitle: {
-    ...typography.headingM,
-    color: palette.textPrimary,
-  },
-  cardSubtitle: {
-    ...typography.helper,
-    color: palette.textSecondary,
-  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -411,41 +300,6 @@ const styles = StyleSheet.create({
   sectionLink: {
     ...typography.helper,
     color: palette.primary,
-  },
-  actionList: {
-    gap: spacing.md,
-  },
-  actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderRadius: 20,
-    padding: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: palette.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBody: {
-    flex: 1,
-  },
-  actionTitle: {
-    ...typography.headingM,
-    color: palette.textPrimary,
-  },
-  actionSubtitle: {
-    ...typography.helper,
-    color: palette.textSecondary,
   },
   rewardGrid: {
     flexDirection: 'row',
@@ -501,6 +355,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 3,
+    marginBottom: spacing.lg,
   },
   feedRow: {
     flexDirection: 'row',

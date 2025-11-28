@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Department(models.Model):
@@ -7,7 +8,13 @@ class Department(models.Model):
     code = models.CharField(max_length=10, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    head_of_department = models.OneToOneField('users.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='headed_department')
+    head_of_department = models.ForeignKey(
+        'users.HOD',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='headed_department'
+    )
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -22,12 +29,18 @@ class TimeStampedModel(models.Model):
 
 
 class AuditLog(models.Model):
-    at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey("users.User", null=True, blank=True, on_delete=models.SET_NULL)
-    action = models.CharField(max_length=32)
-    model = models.CharField(max_length=128)
-    object_id = models.CharField(max_length=64)
-    changes = models.JSONField(default=dict, blank=True)
+    actor_user = models.ForeignKey(
+        "users.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+    action = models.CharField(max_length=255, default='')
+    target_table = models.CharField(max_length=128, default='')
+    target_id = models.CharField(max_length=64, default='')
+    before = models.JSONField(default=dict, blank=True, null=True)
+    after = models.JSONField(default=dict, blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
 
 class CalendarEvent(TimeStampedModel):

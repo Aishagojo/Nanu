@@ -1,8 +1,28 @@
 from django.conf import settings
 from django.db import models
 from core.models import TimeStampedModel
+from learning.models import CurriculumUnit
+from users.models import User
 
+# New models for course chatrooms
+class CourseChatroom(TimeStampedModel):
+    unit = models.ForeignKey(CurriculumUnit, on_delete=models.CASCADE, related_name='chatrooms', null=True, blank=True)
 
+    def __str__(self):
+        return f"Chatroom for {self.unit.title}"
+
+class ChatMessage(TimeStampedModel):
+    chatroom = models.ForeignKey(CourseChatroom, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
+    author_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_messages', null=True, blank=True)
+    message = models.TextField()
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Message by {self.author_user.username} in {self.chatroom.unit.title}"
+
+# Existing models for private threads and support chat
 class Thread(TimeStampedModel):
     subject = models.CharField(max_length=255, blank=True)
     student = models.ForeignKey(

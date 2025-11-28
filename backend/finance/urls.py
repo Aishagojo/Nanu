@@ -1,12 +1,13 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import FeeItemViewSet, PaymentViewSet, FeeSummaryView
+from .views import RecordPaymentView, FeeStructureViewSet, FinanceStatusViewSet, FinanceReportView
 
 router = DefaultRouter()
-router.register(r"items", FeeItemViewSet, basename="fee-item")
-router.register(r"payments", PaymentViewSet, basename="payment")
+router.register(r"fee-structures", FeeStructureViewSet, basename="fee-structure")
+router.register(r"status", FinanceStatusViewSet, basename="finance-status")
 
 urlpatterns = router.urls + [
-    path("students/<int:student_id>/summary/", FeeSummaryView.as_view(), name="fee-summary"),
+    path("record-payment/", RecordPaymentView.as_view(), name="record-payment"),
+    path("report/", FinanceReportView.as_view(), name="finance-report"),
 ]

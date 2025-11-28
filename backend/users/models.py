@@ -3,7 +3,8 @@ from django.db import models
 from django.utils import timezone
 import pyotp
 
-from core.models import TimeStampedModel
+from core.models import TimeStampedModel, Department
+from learning.models import Programme
 
 
 class User(AbstractUser):
@@ -16,22 +17,19 @@ class User(AbstractUser):
         HOD = "hod", "Head of Department"
         FINANCE = "finance", "Finance"
         RECORDS = "records", "Student Records"
-        LIBRARIAN = "librarian", "Librarian"
+        GUEST = "guest", "Guest" # Added from spec
 
-    role = models.CharField(max_length=32, choices=Roles.choices, default=Roles.STUDENT)
+    role = models.CharField(max_length=32, choices=Roles.choices, default=Roles.GUEST)
     display_name = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
     must_change_password = models.BooleanField(default=False)
-    department = models.ForeignKey(
-        'core.Department',
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='staff_members',
-    )
+    
     # Accessibility preferences
     prefers_simple_language = models.BooleanField(default=True)
     prefers_high_contrast = models.BooleanField(default=False)
     speech_rate = models.FloatField(default=0.9)  # for TTS front-end hint
+    
+    # TOTP fields
     totp_secret = models.CharField(max_length=32, blank=True, default="")
     totp_enabled = models.BooleanField(default=False)
     totp_activated_at = models.DateTimeField(null=True, blank=True)
@@ -50,7 +48,7 @@ class User(AbstractUser):
             return ""
         identifier = self.email or self.username
         totp = pyotp.TOTP(self.totp_secret)
-        return totp.provisioning_uri(name=identifier, issuer_name="EduAssist")
+        return totp.provisioning_uri(name=identifier, issuer_name="Rafiki Bot")
 
     def verify_totp(self, code: str) -> bool:
         if not self.totp_secret or not code:
@@ -66,31 +64,87 @@ class User(AbstractUser):
         self.totp_enabled = False
         self.totp_activated_at = None
 
-    def linked_student_ids(self):
-        """
-        Return a list of student ids associated with this user when acting as a parent/guardian.
-        """
-        if self.role != self.Roles.PARENT:
-            return []
-        if not hasattr(self, "_linked_student_ids_cache"):
-            self._linked_student_ids_cache = list(
-                self.linked_students.values_list("student_id", flat=True)
-            )
-        return self._linked_student_ids_cache
+# New Role-Specific Models
 
+class Student(TimeStampedModel):
+    class Status(models.TextChoices):
+        NEW = 'new', 'New'
+        ADMITTED = 'admitted', 'Admitted'
+        FINANCE_OK = 'finance_ok', 'Finance OK'
+        PENDING_HOD = 'pending_hod', 'Pending HOD Approval'
+        ACTIVE = 'active', 'Active'
+        BLOCKED = 'blocked', 'Blocked'
 
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='student_profile')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.SET_NULL, null=True, blank=True)
+    year = models.IntegerField()
+    trimester = models.IntegerField()
+    trimester_label = models.CharField(max_length=50)
+    cohort_year = models.IntegerField()
+    current_status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    stars = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.user.username
+
+class Guardian(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='guardian_profile')
+    # Add any guardian-specific fields here if needed in the future
+
+    def __str__(self):
+        return self.user.username
+
+class Lecturer(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='lecturer_profile')
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+
+    @property
+    def assigned_load(self):
+        # This will be computed based on lecturer_assignments
+        # Implementation will be done later
+        return 0
+
+    def __str__(self):
+        return self.user.username
+
+class HOD(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='hod_profile')
+    department = models.OneToOneField(Department, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+class Admin(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='admin_profile')
+
+    def __str__(self):
+        return self.user.username
+
+class RecordsOfficer(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='records_officer_profile')
+
+    def __str__(self):
+        return self.user.username
+
+class FinanceOfficer(TimeStampedModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='finance_officer_profile')
+
+    def __str__(self):
+        return self.user.username
+
+# Updated ParentStudentLink
 class ParentStudentLink(TimeStampedModel):
     parent = models.ForeignKey(
-        "users.User",
+        Guardian,
         on_delete=models.CASCADE,
         related_name="linked_students",
-        limit_choices_to={"role": User.Roles.PARENT},
+        null=True, blank=True
     )
     student = models.ForeignKey(
-        "users.User",
+        Student,
         on_delete=models.CASCADE,
         related_name="parent_links",
-        limit_choices_to={"role": User.Roles.STUDENT},
+        null=True, blank=True
     )
     relationship = models.CharField(max_length=50, blank=True)
 
@@ -101,8 +155,12 @@ class ParentStudentLink(TimeStampedModel):
 
     def __str__(self):
         rel = f" ({self.relationship})" if self.relationship else ""
-        return f"{self.parent.username} -> {self.student.username}{rel}"
+        return f"{self.parent.user.username} -> {self.student.user.username}{rel}"
 
+
+# TODO: Refactor UserProvisionRequest and FamilyEnrollmentIntent to work with the new role-specific models.
+# These models currently reference the generic User model and will need to be updated to handle
+# the creation and linking of Student, Guardian, etc. profiles.
 
 class UserProvisionRequest(TimeStampedModel):
     class Status(models.TextChoices):
@@ -151,13 +209,14 @@ class FamilyEnrollmentIntent(TimeStampedModel):
         UserProvisionRequest,
         related_name="family_intent_student",
         on_delete=models.CASCADE,
+        null=True, blank=True
     )
     parent_request = models.OneToOneField(
         UserProvisionRequest,
         related_name="family_intent_parent",
         on_delete=models.CASCADE,
         null=True,
-        blank=True,
+        blank=True
     )
     relationship = models.CharField(max_length=50, blank=True)
     course_codes = models.JSONField(default=list, blank=True)
@@ -170,6 +229,13 @@ class FamilyEnrollmentIntent(TimeStampedModel):
     fee_title = models.CharField(max_length=255, blank=True)
     fee_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     fee_due_date = models.DateField(null=True, blank=True)
+
+    # Student academic details
+    programme = models.ForeignKey(Programme, on_delete=models.SET_NULL, null=True, blank=True)
+    year = models.IntegerField(null=True, blank=True)
+    trimester = models.IntegerField(null=True, blank=True)
+    trimester_label = models.CharField(max_length=50, blank=True)
+    cohort_year = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         parent = self.parent_request.username if self.parent_request else "N/A"

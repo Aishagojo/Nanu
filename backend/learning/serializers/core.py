@@ -1,44 +1,47 @@
-from rest_framework import serializers
-from ..models import Course, Unit, Enrollment, AttendanceEvent
+# TODO: This entire file needs to be refactored to work with the new data model.
+# The old models (Course, Unit, Enrollment, etc.) have been replaced.
+
+# from rest_framework import serializers
+# from ..models import Course, Unit, Enrollment, AttendanceEvent
 
 
-class CourseSerializer(serializers.ModelSerializer):
-    lecturer = serializers.PrimaryKeyRelatedField(read_only=True)
-    lecturer_name = serializers.SerializerMethodField()
+# class CourseSerializer(serializers.ModelSerializer):
+#     lecturer = serializers.PrimaryKeyRelatedField(read_only=True)
+#     lecturer_name = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Course
-        fields = ["id", "code", "name", "description", "lecturer", "lecturer_name"]
+#     class Meta:
+#         model = Course
+#         fields = ["id", "code", "name", "description", "lecturer", "lecturer_name"]
 
-    def get_lecturer_name(self, obj):
-        if obj.lecturer_id and obj.lecturer:
-            return obj.lecturer.display_name or obj.lecturer.get_full_name() or obj.lecturer.username
-        return ""
-
-
-class UnitSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Unit
-        fields = ["id", "course", "title", "description"]
+#     def get_lecturer_name(self, obj):
+#         if obj.lecturer_id and obj.lecturer:
+#             return obj.lecturer.display_name or obj.lecturer.get_full_name() or obj.lecturer.username
+#         return ""
 
 
-class EnrollmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Enrollment
-        fields = ["id", "student", "course", "active", "created_at", "updated_at"]
-        read_only_fields = ["created_at", "updated_at"]
+# class UnitSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Unit
+#         fields = ["id", "course", "title", "description"]
 
 
-class AttendanceEventSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AttendanceEvent
-        fields = [
-            "id",
-            "enrollment",
-            "marked_by",
-            "event_type",
-            "note",
-            "reward_tagged",
-            "created_at",
-        ]
-        read_only_fields = ["id", "marked_by", "reward_tagged", "created_at"]
+# class EnrollmentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Enrollment
+#         fields = ["id", "student", "course", "active", "created_at", "updated_at"]
+#         read_only_fields = ["created_at", "updated_at"]
+
+
+# class AttendanceEventSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = AttendanceEvent
+#         fields = [
+#             "id",
+#             "enrollment",
+#             "marked_by",
+#             "event_type",
+#             "note",
+#             "reward_tagged",
+#             "created_at",
+#         ]
+#         read_only_fields = ["id", "marked_by", "reward_tagged", "created_at"]

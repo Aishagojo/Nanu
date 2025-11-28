@@ -1,8 +1,9 @@
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ResourceViewSet
+
+from .views import LibraryAssetViewSet
 
 router = DefaultRouter()
-router.register(r"resources", ResourceViewSet, basename="resource")
+router.register(r"assets", LibraryAssetViewSet, basename="library-asset")
 
 urlpatterns = router.urls
-

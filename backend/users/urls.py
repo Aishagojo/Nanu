@@ -1,10 +1,12 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
+from users.views import (
     UserViewSet,
     ParentStudentLinkViewSet,
     UserProvisionRequestViewSet,
+    StudentViewSet,
+    LecturerViewSet,
     me,
     password_reset_request,
     password_reset_confirm,
@@ -19,6 +21,8 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="user")
+router.register(r"students", StudentViewSet, basename="student")
+router.register(r"lecturers", LecturerViewSet, basename="lecturer")
 router.register(r"parent-links", ParentStudentLinkViewSet, basename="parent-link")
 router.register(r"provision-requests", UserProvisionRequestViewSet, basename="provision-request")
 

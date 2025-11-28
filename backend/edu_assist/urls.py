@@ -1,4 +1,4 @@
-from core.views import index
+# from core.views import index
 from core.views.devices import DeviceRegistrationView
 from django.contrib import admin
 from django.urls import path, include
@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/finance/", include("finance.urls")),
     path("api/repository/", include("repository.urls")),
     path("api/communications/", include("communications.urls")),
+    path("api/rewards/", include("rewards.urls")),
     path("api/devices/register/", DeviceRegistrationView.as_view(), name="device-register"),
     # Auth helpers for browsable API
     path("api-auth/", include("rest_framework.urls")),
@@ -39,7 +40,7 @@ urlpatterns = [
         name="swagger-ui",
     ),
     #path("", RedirectView.as_view(url="/api/docs/", permanent=False)),
-    path("", index),
+    #path("", index),
 ]
 
 if settings.DEBUG:

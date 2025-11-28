@@ -2,14 +2,15 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from core.models import TimeStampedModel
+from users.models import Student
+from repository.models import LibraryAsset
 
 
 class LearningGoal(TimeStampedModel):
     """Personalized learning goals for students"""
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name='learning_goals',
-                              limit_choices_to={'role': 'student'})
-    course = models.ForeignKey('learning.Course', on_delete=models.CASCADE, related_name='student_goals')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE,
+                              related_name='learning_goals')
+    programme = models.ForeignKey('learning.Programme', on_delete=models.CASCADE, related_name='student_goals')
     term = models.CharField(max_length=20)
     
     # Goal details
@@ -41,7 +42,7 @@ class LearningGoal(TimeStampedModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f"{self.student.username} - {self.title}"
+        return f"{self.student.user.username} - {self.title}"
 
 
 class LearningMilestone(TimeStampedModel):
@@ -55,7 +56,7 @@ class LearningMilestone(TimeStampedModel):
     # Achievement criteria
     required_points = models.PositiveIntegerField(default=0)
     required_attendance = models.PositiveIntegerField(default=0, help_text="Required attendance percentage")
-    required_resources = models.ManyToManyField('repository.Resource', blank=True,
+    required_resources = models.ManyToManyField(LibraryAsset, blank=True,
                                               related_name='required_for_milestones')
     custom_criteria = models.JSONField(null=True, blank=True)
     
@@ -73,7 +74,7 @@ class LearningMilestone(TimeStampedModel):
         ordering = ['goal', 'order']
         
     def __str__(self):
-        return f"{self.goal.student.username} - {self.title}"
+        return f"{self.goal.student.user.username} - {self.title}"
 
 
 class LearningSupport(TimeStampedModel):
@@ -96,7 +97,7 @@ class LearningSupport(TimeStampedModel):
     duration_minutes = models.PositiveIntegerField(null=True, blank=True)
     
     # Resources and follow-up
-    resources_provided = models.ManyToManyField('repository.Resource', blank=True,
+    resources_provided = models.ManyToManyField(LibraryAsset, blank=True,
                                               related_name='used_in_support')
     follow_up_date = models.DateField(null=True, blank=True)
     outcome_notes = models.TextField(blank=True)
@@ -109,7 +110,7 @@ class LearningSupport(TimeStampedModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f"{self.milestone.goal.student.username} - {self.support_type}"
+        return f"{self.milestone.goal.student.user.username} - {self.support_type}"
 
 
 class GoalReflection(TimeStampedModel):
@@ -143,4 +144,4 @@ class GoalReflection(TimeStampedModel):
         ordering = ['-created_at']
         
     def __str__(self):
-        return f"{self.goal.student.username} - {self.created_at}"
+        return f"{self.goal.student.user.username} - {self.created_at}"

@@ -5,13 +5,14 @@ from .achievements import (
     RewardClaimSerializer,
     TermProgressSerializer,
 )
-from .assignments import AssignmentSerializer, RegistrationSerializer
-from .core import (
-    CourseSerializer,
-    UnitSerializer,
-    EnrollmentSerializer,
-    AttendanceEventSerializer,
-)
+from .assignments import AssignmentSerializer, RegistrationSerializer, SubmissionSerializer
+from .catalogue import ProgrammeSerializer, CurriculumUnitSerializer, TermOfferingSerializer, LecturerAssignmentSerializer, TimetableSerializer# TODO: Refactor core serializers and uncomment
+# from .core import (
+#     CourseSerializer,
+#     UnitSerializer,
+#     EnrollmentSerializer,
+#     AttendanceEventSerializer,
+# )
 from .sessions import (
     CourseScheduleSerializer,
     CourseSessionSerializer,
@@ -40,10 +41,15 @@ __all__ = [
     "TermProgressSerializer",
     "AssignmentSerializer",
     "RegistrationSerializer",
-    "CourseSerializer",
-    "UnitSerializer",
-    "EnrollmentSerializer",
-    "AttendanceEventSerializer",
+    "ProgrammeSerializer",
+    "CurriculumUnitSerializer",
+    "TermOfferingSerializer",
+    "LecturerAssignmentSerializer",
+    "TimetableSerializer",
+    # "CourseSerializer",
+    # "UnitSerializer",
+    # "EnrollmentSerializer",
+    # "AttendanceEventSerializer",
     "CourseScheduleSerializer",
     "CourseSessionSerializer",
     "VoiceAttendanceSerializer",

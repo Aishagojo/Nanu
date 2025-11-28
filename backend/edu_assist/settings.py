@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "repository",
     "chatbot",
     "notifications",
+    "rewards",
 ]
 
 MIDDLEWARE = [
@@ -87,6 +88,10 @@ STATIC_URL = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 RECORDS_PROVISION_PASSCODE = os.environ.get("RECORDS_PROVISION_PASSCODE", "Records@2025")
+
+ADMIN_USERNAME = os.environ.get("DJANGO_ADMIN_USERNAME", "admin")
+ADMIN_EMAIL = os.environ.get("DJANGO_ADMIN_EMAIL", "admin@example.com")
+ADMIN_PASSWORD = os.environ.get("DJANGO_ADMIN_PASSWORD", "adminpass")
 
 CORS_ALLOW_ALL_ORIGINS = True
 

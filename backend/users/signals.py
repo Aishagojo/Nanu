@@ -29,11 +29,11 @@ def audit_password_change(sender, instance, created, **kwargs):
     if instance.password != previous:
         actor = getattr(instance, "_password_changed_by", None)
         AuditLog.objects.create(
-            user=actor if hasattr(actor, "pk") else None,
+            actor_user=actor if hasattr(actor, "pk") else None,
             action="password_change",
-            model=sender._meta.label,
-            object_id=str(instance.pk),
-            changes={"password_changed": True},
+            target_table=sender._meta.db_table,
+            target_id=str(instance.pk),
+            after={"password_changed": True},
         )
         if hasattr(instance, "_password_changed_by"):
             instance._password_changed_by = None
